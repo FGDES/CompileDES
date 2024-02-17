@@ -1,4 +1,4 @@
-# CompileDES --- Compile Discrete-Event Systems to Executable Code 
+# CompileDES -- Compile Discrete-Event Systems to Executable Code 
 
 Once a number of automata have been synthesised to supervise a physical
 plant, the task remains to implement their behaviour on a likewise physical device.
@@ -10,10 +10,8 @@ are supported, along with a exhaustive range of configuration options.
 
 
 The code in this repository is strictly source only.
-Precomiled binaries/executable are available for Linux/MacOSx/Windows.
-see https://fgdes.tf.fau.de/compiledes. If you want to build your own,
-it is recommended that you get a precompiled package as a basis and
-then update the sources via this repository or to whatever your needs are.
+Precomiled binaries/executable are available for Linux/MacOSx/Windows from the FGDES web site.
+If you want to build your own, clone this repository and follow the buil instructions.
 
 - [get precompiled package](https://fgdes.tf.fau.de/download.html)
 - [build process](https://fgdes.tf.fau.de/compiledes/build.html)
