@@ -1,13 +1,12 @@
 # libFAUDES - A Discrete-Event Systems Library
 
 
-This is a stripped down sorce tree of libFAUDES v2.29d configured for
+This is a stripped down source tree of libFAUDES v2.29d configured for
 the use with CompileDES. It is distributed as part of the CompileDES
 package for convenience. A complete and recent version of libFAUDES
 can be ontained here:
 
-
-http://www.rt.eei.uni-erlangen.de/FGdes
+https://fgdes.tf.fau.de/faudes
 
 
 Copyright (C) 2006, Bernd Opitz.
