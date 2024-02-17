@@ -1,4 +1,4 @@
-# CompileDES -- Compile Discrete-Event Systems to Executable Code 
+# Compile Discrete-Event Systems to Executable Code 
 
 Once a number of automata have been synthesised to supervise a physical
 plant, the task remains to implement their behaviour on a likewise physical device.
