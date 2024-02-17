@@ -9,9 +9,9 @@ can be ontained here:
 https://fgdes.tf.fau.de/faudes
 
 
-Copyright (C) 2006, Bernd Opitz.
-Copyright (C) 2008 - 2010, Thomas Moor, Klaus Schmidt, Sebastian Perk. 
-Copyright (C) 2011 - 2013, Thomas Moor, Klaus Schmidt
+- Copyright (C) 2006, Bernd Opitz.
+- Copyright (C) 2008 - 2010, Thomas Moor, Klaus Schmidt, Sebastian Perk. 
+- Copyright (C) 2011 - 2013, Thomas Moor, Klaus Schmidt
 
 
 
