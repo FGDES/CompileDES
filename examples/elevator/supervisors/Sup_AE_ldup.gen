@@ -1,0 +1,241 @@
+<Generator>
+SupConNB((Generator),(Generator||PrefixClosure(Spez_ldup))) 
+
+% 
+%  Statistics for SupConNB((Generator),(Generator||PrefixClosure(Spez_ldup)))
+% 
+%  States:        74
+%  Init/Marked:   1/6
+%  Events:        11
+%  Transitions:   202
+%  StateSymbols:  0
+%  Attrib. E/S/T: 3/0/0
+% 
+
+<Alphabet>
+c_up          +C+           ld_upon       ld_upoff      c_stp         +C+          
+c_down        +C+           c_ar1         c_ar0         c_ar2         c_lv0        
+c_lv1         c_lv2        
+</Alphabet>
+
+<States>
+<Consecutive>
+1              74            
+</Consecutive>
+</States>
+
+<TransRel>
+1              c_up          2             
+1              c_down        3             
+2              ld_upon       13            
+2              c_down        11            
+2              c_lv0         33            
+3              c_up          2             
+3              c_stp         1             
+3              c_lv0         4             
+4              c_up          5             
+4              c_stp         6             
+5              ld_upon       7             
+5              c_down        8             
+5              c_ar0         9             
+6              c_up          5             
+6              c_down        4             
+7              c_stp         16            
+7              c_down        15            
+7              c_ar0         10            
+8              c_up          5             
+8              ld_upon       15            
+9              c_up          2             
+9              ld_upon       10            
+9              c_down        11            
+10             c_up          13            
+10             c_stp         14            
+10             c_down        12            
+11             c_up          2             
+11             ld_upon       12            
+11             c_lv0         8             
+12             c_up          13            
+12             c_stp         14            
+12             c_lv0         15            
+13             c_stp         14            
+13             c_down        12            
+13             c_lv0         19            
+14             ld_upoff      1             
+14             c_down        18            
+15             c_up          7             
+15             c_stp         16            
+16             ld_upoff      6             
+16             c_down        17            
+17             ld_upoff      4             
+17             c_stp         16            
+18             ld_upoff      3             
+18             c_stp         14            
+18             c_lv0         17            
+19             c_stp         20            
+19             c_down        21            
+19             c_ar1         22            
+20             ld_upoff      34            
+20             c_down        29            
+21             c_up          19            
+21             c_stp         20            
+21             c_ar0         74            
+22             c_up          23            
+22             c_stp         24            
+22             c_down        25            
+23             c_stp         24            
+23             c_down        25            
+23             c_lv1         40            
+24             ld_upoff      26            
+24             c_down        27            
+25             c_up          23            
+25             c_stp         24            
+25             c_lv1         21            
+26             c_up          37            
+26             c_down        28            
+27             ld_upoff      28            
+27             c_stp         24            
+27             c_lv1         29            
+28             c_up          37            
+28             c_stp         26            
+28             c_lv1         30            
+29             ld_upoff      30            
+29             c_stp         20            
+29             c_ar0         31            
+30             c_up          33            
+30             c_stp         34            
+30             c_ar0         32            
+31             ld_upoff      32            
+31             c_stp         14            
+31             c_down        18            
+32             c_up          2             
+32             c_stp         1             
+32             c_down        3             
+33             ld_upon       19            
+33             c_down        35            
+33             c_ar1         36            
+34             c_up          33            
+34             c_down        30            
+35             c_up          33            
+35             ld_upon       21            
+35             c_ar0         73            
+36             c_up          37            
+36             ld_upon       22            
+36             c_down        38            
+37             ld_upon       23            
+37             c_down        38            
+37             c_lv1         39            
+38             c_up          37            
+38             ld_upon       25            
+38             c_lv1         35            
+39             ld_upon       40            
+39             c_down        41            
+39             c_ar2         42            
+40             c_stp         50            
+40             c_down        49            
+40             c_ar2         44            
+41             c_up          39            
+41             ld_upon       49            
+41             c_ar1         72            
+42             c_up          43            
+42             ld_upon       44            
+42             c_down        45            
+43             ld_upon       47            
+43             c_down        45            
+43             c_lv2         69            
+44             c_up          47            
+44             c_stp         48            
+44             c_down        46            
+45             c_up          43            
+45             ld_upon       46            
+45             c_lv2         41            
+46             c_up          47            
+46             c_stp         48            
+46             c_lv2         49            
+47             c_stp         48            
+47             c_down        46            
+47             c_lv2         60            
+48             ld_upoff      57            
+48             c_down        58            
+49             c_up          40            
+49             c_stp         50            
+49             c_ar1         51            
+50             ld_upoff      52            
+50             c_down        53            
+51             c_up          23            
+51             c_stp         24            
+51             c_down        25            
+52             c_up          39            
+52             c_down        54            
+53             ld_upoff      54            
+53             c_stp         50            
+53             c_ar1         55            
+54             c_up          39            
+54             c_stp         52            
+54             c_ar1         56            
+55             ld_upoff      56            
+55             c_stp         24            
+55             c_down        27            
+56             c_up          37            
+56             c_stp         26            
+56             c_down        28            
+57             c_up          43            
+57             c_down        59            
+58             ld_upoff      59            
+58             c_stp         48            
+58             c_lv2         53            
+59             c_up          43            
+59             c_stp         57            
+59             c_lv2         54            
+60             c_stp         61            
+60             c_down        62            
+61             ld_upoff      64            
+61             c_down        65            
+62             c_up          60            
+62             c_stp         61            
+62             c_ar2         63            
+63             c_up          47            
+63             c_stp         48            
+63             c_down        46            
+64             c_up          69            
+64             c_down        66            
+65             ld_upoff      66            
+65             c_stp         61            
+65             c_ar2         67            
+66             c_up          69            
+66             c_stp         64            
+66             c_ar2         68            
+67             ld_upoff      68            
+67             c_stp         48            
+67             c_down        58            
+68             c_up          43            
+68             c_stp         57            
+68             c_down        59            
+69             ld_upon       60            
+69             c_down        70            
+70             c_up          69            
+70             ld_upon       62            
+70             c_ar2         71            
+71             c_up          43            
+71             ld_upon       63            
+71             c_down        45            
+72             c_up          37            
+72             ld_upon       51            
+72             c_down        38            
+73             c_up          2             
+73             ld_upon       74            
+73             c_down        11            
+74             c_up          13            
+74             c_stp         14            
+74             c_down        12            
+</TransRel>
+
+<InitStates>
+1             
+</InitStates>
+
+<MarkedStates>
+1              14             24             26             48             57            
+</MarkedStates>
+
+
+</Generator>

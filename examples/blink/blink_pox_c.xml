@@ -1,0 +1,784 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+  xmlns="http://www.plcopen.org/xml/tc6_0201"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.plcopen.org/xml/tc6_0201 http://www.plcopen.org/xml/tc6.xsd" >
+<fileHeader
+  companyName="FGDES/LRT"
+  creationDateTime="2017-03-14T15:42:55"
+  productName="CompileDES"
+  productVersion="3.10" />
+<contentHeader
+  name="Blink_Pox_2017_02" >
+  <coordinateInfo>
+    <fbd><scaling x="1" y="1"/></fbd>
+    <ld><scaling x="1" y="1"/></ld>
+    <sfc><scaling x="1" y="1"/></sfc>
+  </coordinateInfo>
+</contentHeader>
+<types>
+<dataTypes />
+<pous>
+<pou name="fcg_cyclic_fb" pouType="functionBlock">
+<interface>
+  <inputVars retain="false">
+    <variable name="RESET">
+      <type> <BOOL /> </type>
+      <initialValue> <simpleValue value="false" /> </initialValue>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">external reset</xhtml></documentation>
+    </variable>
+  </inputVars>
+  <outputVars retain="false">
+    <variable name="STATUS">
+      <type> <BYTE /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">status (0x00 &lt;&gt; waiting, 0x01&lt;&gt;executing, 0x02&lt;&gt;err)</xhtml></documentation>
+    </variable>
+    <variable name="RECENT_EVENT">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">recent event (0&lt;&gt;none)</xhtml></documentation>
+    </variable>
+    <variable name="PENDING_EVENTS">
+      <type>
+        <array>
+          <dimension lower="0" upper="0" />
+          <baseType> <BYTE /> </baseType>
+        </array>
+      </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">pending input events incl timer elapse</xhtml></documentation>
+    </variable>
+    <variable name="ENABLED_EVENTS">
+      <type>
+        <array>
+          <dimension lower="0" upper="0" />
+          <baseType> <BYTE /> </baseType>
+        </array>
+      </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">events enabled by all generators</xhtml></documentation>
+    </variable>
+    <variable name="PARALLEL_STATE">
+      <type>
+        <array>
+          <dimension lower="0" upper="2" />
+          <baseType> <INT /> </baseType>
+        </array>
+      </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">parallel state</xhtml></documentation>
+    </variable>
+  </outputVars>
+  <localVars retain="false">
+    <variable name="fcg_exec_event">
+      <type> <INT /> </type>
+      <initialValue> <simpleValue value="-1" /> </initialValue>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">executed event (-1&lt;&gt;init, 0&lt;&gt;none)</xhtml></documentation>
+    </variable>
+    <variable name="fcg_sched_event">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">scheduled event (0&lt;&gt;none)</xhtml></documentation>
+    </variable>
+    <variable name="fcg_line_level_0">
+      <type> <BOOL /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">line levels</xhtml></documentation>
+    </variable>
+    <variable name="fcg_first_loop">
+      <type> <BOOL /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">loop flag</xhtml></documentation>
+    </variable>
+    <variable name="fcg_timer_Tick_cnt">
+      <type> <TIME /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">timer states</xhtml></documentation>
+    </variable>
+    <variable name="fcg_timer_Tick_run">
+      <type> <BOOL /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">timer states</xhtml></documentation>
+    </variable>
+    <variable name="fcg_time_elapsed">
+      <type> <TIME /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">elapsed time since last invokation</xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_locenabled">
+      <type>
+        <array>
+          <dimension lower="0" upper="0" />
+          <baseType> <BYTE /> </baseType>
+        </array>
+      </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">parse generator</xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_parsetrans">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">parse generator</xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_parseevent">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">parse generator</xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_executables">
+      <type>
+        <array>
+          <dimension lower="0" upper="0" />
+          <baseType> <BYTE /> </baseType>
+        </array>
+      </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">enabled events that can be executed</xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_wordret">
+      <type> <BYTE /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">aux maths and stack variables </xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_edge">
+      <type> <BOOL /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">aux maths and stack variables </xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_wordaddr">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">aux maths and stack variables </xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_bitaddr">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">aux maths and stack variables </xhtml></documentation>
+    </variable>
+    <variable name="fcg_aux_bitmask">
+      <type> <BYTE /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">aux maths and stack variables </xhtml></documentation>
+    </variable>
+    <variable name="fcg_bitmask_vector">
+      <type>
+        <array>
+          <dimension lower="0" upper="7" />
+          <baseType> <BYTE /> </baseType>
+        </array>
+      </type>
+      <initialValue> 
+        <arrayValue> 
+          <value> <simpleValue value="BYTE#16#01" /> </value>
+          <value> <simpleValue value="BYTE#16#02" /> </value>
+          <value> <simpleValue value="BYTE#16#04" /> </value>
+          <value> <simpleValue value="BYTE#16#08" /> </value>
+          <value> <simpleValue value="BYTE#16#10" /> </value>
+          <value> <simpleValue value="BYTE#16#20" /> </value>
+          <value> <simpleValue value="BYTE#16#40" /> </value>
+          <value> <simpleValue value="BYTE#16#80" /> </value>
+        </arrayValue> 
+      </initialValue> 
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">mask vectors</xhtml></documentation>
+    </variable>
+    <variable name="fcg_generator_states_0">
+      <type>
+        <array>
+          <dimension lower="1" upper="6" />
+          <baseType> <INT /> </baseType>
+        </array>
+      </type>
+      <initialValue> 
+        <arrayValue> 
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="3" /> </value>
+          <value> <simpleValue value="6" /> </value>
+          <value> <simpleValue value="9" /> </value>
+          <value> <simpleValue value="12" /> </value>
+          <value> <simpleValue value="15" /> </value>
+        </arrayValue> 
+      </initialValue> 
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">generator [Blink3]</xhtml></documentation>
+    </variable>
+    <variable name="fcg_generator_transitions_0">
+      <type>
+        <array>
+          <dimension lower="0" upper="17" />
+          <baseType> <INT /> </baseType>
+        </array>
+      </type>
+      <initialValue> 
+        <arrayValue> 
+          <value> <simpleValue value="3" /> </value>
+          <value> <simpleValue value="2" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="4" /> </value>
+          <value> <simpleValue value="3" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="5" /> </value>
+          <value> <simpleValue value="6" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="7" /> </value>
+          <value> <simpleValue value="5" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="8" /> </value>
+          <value> <simpleValue value="1" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="6" /> </value>
+          <value> <simpleValue value="4" /> </value>
+          <value> <simpleValue value="0" /> </value>
+        </arrayValue> 
+      </initialValue> 
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">generator [Blink3]</xhtml></documentation>
+    </variable>
+    <variable name="fcg_generator_transitions_1">
+      <type>
+        <array>
+          <dimension lower="0" upper="15" />
+          <baseType> <INT /> </baseType>
+        </array>
+      </type>
+      <initialValue> 
+        <arrayValue> 
+          <value> <simpleValue value="3" /> </value>
+          <value> <simpleValue value="13" /> </value>
+          <value> <simpleValue value="4" /> </value>
+          <value> <simpleValue value="13" /> </value>
+          <value> <simpleValue value="5" /> </value>
+          <value> <simpleValue value="13" /> </value>
+          <value> <simpleValue value="6" /> </value>
+          <value> <simpleValue value="13" /> </value>
+          <value> <simpleValue value="7" /> </value>
+          <value> <simpleValue value="13" /> </value>
+          <value> <simpleValue value="8" /> </value>
+          <value> <simpleValue value="13" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="2" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="0" /> </value>
+        </arrayValue> 
+      </initialValue> 
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">generator [Delay]</xhtml></documentation>
+    </variable>
+    <variable name="fcg_generator_transitions_2">
+      <type>
+        <array>
+          <dimension lower="0" upper="11" />
+          <baseType> <INT /> </baseType>
+        </array>
+      </type>
+      <initialValue> 
+        <arrayValue> 
+          <value> <simpleValue value="6" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="1" /> </value>
+          <value> <simpleValue value="5" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="3" /> </value>
+          <value> <simpleValue value="5" /> </value>
+          <value> <simpleValue value="6" /> </value>
+          <value> <simpleValue value="0" /> </value>
+          <value> <simpleValue value="1" /> </value>
+          <value> <simpleValue value="5" /> </value>
+          <value> <simpleValue value="0" /> </value>
+        </arrayValue> 
+      </initialValue> 
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">generator [WaitButton]</xhtml></documentation>
+    </variable>
+    <variable name="fcg_systime_ton">
+      <type> <derived name="TON" /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">iec timer to simulate system time</xhtml></documentation>
+    </variable>
+    <variable name="fcg_systime_recent">
+      <type> <TIME /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">iec timer to simulate system time</xhtml></documentation>
+    </variable>
+    <variable name="fcg_systime_now">
+      <type> <TIME /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">iec timer to simulate system time</xhtml></documentation>
+    </variable>
+  </localVars>
+  <externalVars>
+    <variable name="input">
+      <type> <BOOL /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">import i/o variables and addresses</xhtml></documentation>
+    </variable>
+  </externalVars>
+</interface>
+<body>
+<ST>
+<xhtml xmlns="http://www.w3.org/1999/xhtml">
+(* ************************************************ *)
+(* CodeGenerator: Target IEC 61131 Structured Text  *)
+(* ************************************************ *)
+
+
+(* CompileDES 3.10 (using libFAUDES 2.28a) *)
+(* Configuration: Blink_Pox_2017_02 *)
+
+
+
+(* ************************************************ *)
+(* * executor core cyclic code: reset/initialise  * *)
+(* ************************************************ *)
+
+
+(* ************************************************ *)
+(* * reset internal state                         * *)
+
+(* set internal reset flag *)
+IF RESET THEN
+    fcg_exec_event := -1;
+END_IF;
+
+(* do reset core *)
+IF fcg_exec_event = -1 THEN
+  (* clear status *)
+  STATUS := 0;
+  (* set initial state *)
+  PARALLEL_STATE[0] := 1;
+  PARALLEL_STATE[1] := 0;
+  PARALLEL_STATE[2] := 0;
+  (* clear scheduled event *)
+  fcg_sched_event := 0;
+  (* clear recent event *)
+  RECENT_EVENT := 0;
+  (* clear pending/enabled events *)
+  PENDING_EVENTS[0] := BYTE#0;
+  ENABLED_EVENTS[0] := BYTE#0;
+  (* reset timer *)
+  fcg_timer_Tick_run := false;
+  fcg_timer_Tick_cnt := TIME#1s;
+END_IF;
+
+(* do reset/track systime *)
+IF fcg_exec_event = -1  THEN
+  fcg_systime_ton(IN:=false);
+  fcg_systime_recent := TIME#0ms;
+END_IF;
+fcg_systime_ton(IN:=true, PT:=TIME#2h, ET=&gt;fcg_systime_now);
+fcg_time_elapsed := fcg_systime_now - fcg_systime_recent;
+IF fcg_systime_now &lt; TIME#1h THEN
+  fcg_systime_recent := fcg_systime_now;
+ELSE
+  fcg_systime_ton(IN:=false, PT:=TIME#2h);
+  fcg_systime_ton(IN:=true, PT:=TIME#2h);
+  fcg_systime_recent := TIME#0ms;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * bail out on external reset                   * *)
+
+IF RESET THEN
+    RETURN;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * update timer states                          * *)
+
+
+IF fcg_time_elapsed &gt; TIME#0ms THEN
+  IF fcg_timer_Tick_run THEN
+    IF fcg_timer_Tick_cnt &gt; fcg_time_elapsed THEN
+      fcg_timer_Tick_cnt := fcg_timer_Tick_cnt - fcg_time_elapsed;
+    ELSE
+      fcg_timer_Tick_cnt := TIME#0s;
+    END_IF;
+  END_IF;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * executor core cyclic code: begin             * *)
+(* ************************************************ *)
+
+
+
+(* ************************************************ *)
+(* * sense input events                           * *)
+
+(* init: reset all line data and generate statics *)
+IF fcg_exec_event = -1 THEN
+  fcg_line_level_0 := input;
+  IF fcg_line_level_0 THEN
+    (* positive value: trigger init event [PushButton] *)
+    PENDING_EVENTS[0] := PENDING_EVENTS[0] OR BYTE#16#01;
+  END_IF;
+END_IF;
+
+(* normal operation: read lines and detect edges *)
+IF fcg_exec_event &lt;&gt; -1 THEN
+  (* read line [input] *)
+  fcg_aux_edge := input;
+  IF fcg_aux_edge &lt;&gt; fcg_line_level_0 THEN
+    IF fcg_aux_edge THEN
+      (* positive edge: trigger input event [PushButton] *)
+      PENDING_EVENTS[0] := PENDING_EVENTS[0] OR BYTE#16#01;
+      fcg_sched_event := 0;
+    END_IF;
+    fcg_line_level_0 := fcg_aux_edge;
+  END_IF;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * sense timer elapse                           * *)
+
+IF fcg_timer_Tick_run AND (fcg_timer_Tick_cnt &lt;= TIME#0ms) THEN
+  fcg_timer_Tick_run := false;
+  PENDING_EVENTS[0] := PENDING_EVENTS[0] OR BYTE#16#02;
+  fcg_sched_event := 0;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * event execution loop                         * *)
+
+(* clear status to waiting *)
+STATUS := 0;
+(* clear event report *)
+RECENT_EVENT := 0;
+(* set entry flag *)
+fcg_first_loop := true;
+WHILE true DO
+
+
+
+(* ************************************************ *)
+(* * update enabled events after execution        * *)
+
+(* if event was executed (and on init) *)
+IF fcg_exec_event &lt;&gt; 0 THEN
+
+  (* set all to enabled *)
+  ENABLED_EVENTS[0] := BYTE#16#ff;
+
+  (* setup enabled events by [Blink3] *)
+  fcg_aux_locenabled[0] := BYTE#16#03;
+  fcg_aux_parsetrans := fcg_generator_states_0[PARALLEL_STATE[0]];
+  WHILE true DO
+    fcg_aux_parseevent := fcg_generator_transitions_0[fcg_aux_parsetrans];
+    IF fcg_aux_parseevent = 0 THEN EXIT; END_IF;
+    fcg_aux_bitaddr := fcg_aux_parseevent;
+    fcg_aux_bitaddr := fcg_aux_bitaddr - 1;
+    fcg_aux_bitmask := fcg_bitmask_vector[fcg_aux_bitaddr];
+    fcg_aux_locenabled[fcg_aux_wordaddr] := fcg_aux_locenabled[fcg_aux_wordaddr] OR fcg_aux_bitmask;
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 2;
+  END_WHILE;
+  (* restrict enabled events *)
+  ENABLED_EVENTS[0] := ENABLED_EVENTS[0] AND fcg_aux_locenabled[0];
+
+  (* setup enabled events by [Delay] *)
+  fcg_aux_locenabled[0] := BYTE#16#01;
+  fcg_aux_parsetrans := PARALLEL_STATE[1];
+  WHILE true DO
+    fcg_aux_parseevent := fcg_generator_transitions_1[fcg_aux_parsetrans];
+    IF fcg_aux_parseevent = 0 THEN EXIT; END_IF;
+    fcg_aux_bitaddr := fcg_aux_parseevent;
+    fcg_aux_bitaddr := fcg_aux_bitaddr - 1;
+    fcg_aux_bitmask := fcg_bitmask_vector[fcg_aux_bitaddr];
+    fcg_aux_locenabled[fcg_aux_wordaddr] := fcg_aux_locenabled[fcg_aux_wordaddr] OR fcg_aux_bitmask;
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 2;
+  END_WHILE;
+  (* restrict enabled events *)
+  ENABLED_EVENTS[0] := ENABLED_EVENTS[0] AND fcg_aux_locenabled[0];
+
+  (* setup enabled events by [WaitButton] *)
+  fcg_aux_locenabled[0] := BYTE#16#da;
+  fcg_aux_parsetrans := PARALLEL_STATE[2];
+  WHILE true DO
+    fcg_aux_parseevent := fcg_generator_transitions_2[fcg_aux_parsetrans];
+    IF fcg_aux_parseevent = 0 THEN EXIT; END_IF;
+    fcg_aux_bitaddr := fcg_aux_parseevent;
+    fcg_aux_bitaddr := fcg_aux_bitaddr - 1;
+    fcg_aux_bitmask := fcg_bitmask_vector[fcg_aux_bitaddr];
+    fcg_aux_locenabled[fcg_aux_wordaddr] := fcg_aux_locenabled[fcg_aux_wordaddr] OR fcg_aux_bitmask;
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 2;
+  END_WHILE;
+  (* restrict enabled events *)
+  ENABLED_EVENTS[0] := ENABLED_EVENTS[0] AND fcg_aux_locenabled[0];
+
+  (* dispose event *)
+  fcg_exec_event := 0;
+  fcg_sched_event := 0;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * schedule next event to execute               * *)
+
+IF fcg_sched_event = 0 THEN
+
+  (* setup candidate set to &quot;pending or internal&quot; *)
+  fcg_aux_executables[0] := PENDING_EVENTS[0] OR BYTE#16#fc;
+  (* restrict candidate set by &quot;enabled&quot; *)
+  fcg_aux_executables[0] := fcg_aux_executables[0] AND ENABLED_EVENTS[0];
+
+  (* find highest priority event (lowest bitaddress) *)
+  fcg_sched_event := 0;
+  IF NOT ( fcg_aux_executables[0] = BYTE#0 ) THEN
+    IF ( fcg_aux_executables[0] AND BYTE#16#0f ) &lt;&gt; BYTE#0 THEN
+      IF ( fcg_aux_executables[0] AND BYTE#16#03 ) &lt;&gt; BYTE#0 THEN
+        IF ( fcg_aux_executables[0] AND BYTE#16#01 ) &lt;&gt; BYTE#0 THEN
+          fcg_sched_event := 1;
+        ELSE
+          fcg_sched_event := 2;
+        END_IF;
+      ELSE
+        IF ( fcg_aux_executables[0] AND BYTE#16#04 ) &lt;&gt; BYTE#0 THEN
+          fcg_sched_event := 3;
+        ELSE
+          fcg_sched_event := 4;
+        END_IF;
+      END_IF;
+    ELSE
+      IF ( fcg_aux_executables[0] AND BYTE#16#30 ) &lt;&gt; BYTE#0 THEN
+        IF ( fcg_aux_executables[0] AND BYTE#16#10 ) &lt;&gt; BYTE#0 THEN
+          fcg_sched_event := 5;
+        ELSE
+          fcg_sched_event := 6;
+        END_IF;
+      ELSE
+        IF ( fcg_aux_executables[0] AND BYTE#16#40 ) &lt;&gt; BYTE#0 THEN
+          fcg_sched_event := 7;
+        ELSE
+          fcg_sched_event := 8;
+        END_IF;
+      END_IF;
+    END_IF;
+  END_IF;
+
+  (* remove scheduled event from pending events *)
+  IF fcg_sched_event &gt; 0 THEN
+    fcg_aux_bitaddr := fcg_sched_event;
+    fcg_aux_bitaddr := fcg_aux_bitaddr - 1;
+    fcg_aux_bitmask := fcg_bitmask_vector[fcg_aux_bitaddr];
+    PENDING_EVENTS[fcg_aux_wordaddr] := PENDING_EVENTS[fcg_aux_wordaddr] AND (NOT fcg_aux_bitmask );
+  END_IF;
+
+  (* detect sync error *)
+  IF fcg_sched_event = 0 THEN
+    fcg_aux_wordret := PENDING_EVENTS[0];
+    IF NOT ( fcg_aux_wordret = BYTE#0 ) THEN
+      STATUS := STATUS OR BYTE#16#02;
+    END_IF;
+  END_IF;
+
+  (* cancel pending events if no event could be scheduled  *)
+  IF fcg_sched_event = 0 THEN
+    PENDING_EVENTS[0] := BYTE#0;
+  END_IF;
+
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * break execution loop                         * *)
+
+IF fcg_sched_event = 0 THEN EXIT; END_IF;
+fcg_first_loop := false;
+
+
+
+(* ************************************************ *)
+(* * execute scheduled event                      * *)
+
+IF fcg_sched_event &lt;&gt; 0 THEN
+
+  fcg_exec_event := fcg_sched_event;
+  fcg_sched_event := 0;
+  STATUS := STATUS OR BYTE#16#01;
+
+  (* execute event for [Blink3] *)
+  fcg_aux_parsetrans := fcg_generator_states_0[PARALLEL_STATE[0]];
+  WHILE true DO
+    fcg_aux_parseevent := fcg_generator_transitions_0[fcg_aux_parsetrans];
+    IF fcg_aux_parseevent = fcg_exec_event THEN EXIT; END_IF;
+    IF fcg_aux_parseevent = 0 THEN EXIT; END_IF;
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 2;
+  END_WHILE;
+  IF fcg_aux_parseevent &gt; 0 THEN
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 1;
+    PARALLEL_STATE[0] := fcg_generator_transitions_0[fcg_aux_parsetrans];
+  END_IF;
+
+  (* execute event for [Delay] *)
+  fcg_aux_parsetrans := PARALLEL_STATE[1];
+  WHILE true DO
+    fcg_aux_parseevent := fcg_generator_transitions_1[fcg_aux_parsetrans];
+    IF fcg_aux_parseevent = fcg_exec_event THEN EXIT; END_IF;
+    IF fcg_aux_parseevent = 0 THEN EXIT; END_IF;
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 2;
+  END_WHILE;
+  IF fcg_aux_parseevent &gt; 0 THEN
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 1;
+    PARALLEL_STATE[1] := fcg_generator_transitions_1[fcg_aux_parsetrans];
+  END_IF;
+
+  (* execute event for [WaitButton] *)
+  fcg_aux_parsetrans := PARALLEL_STATE[2];
+  WHILE true DO
+    fcg_aux_parseevent := fcg_generator_transitions_2[fcg_aux_parsetrans];
+    IF fcg_aux_parseevent = fcg_exec_event THEN EXIT; END_IF;
+    IF fcg_aux_parseevent = 0 THEN EXIT; END_IF;
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 2;
+  END_WHILE;
+  IF fcg_aux_parseevent &gt; 0 THEN
+    fcg_aux_parsetrans := fcg_aux_parsetrans + 1;
+    PARALLEL_STATE[2] := fcg_generator_transitions_2[fcg_aux_parsetrans];
+  END_IF;
+
+  (* record *)
+  RECENT_EVENT := fcg_exec_event;
+
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * operate timers                               * *)
+
+IF fcg_exec_event &gt; 0 THEN
+  CASE fcg_exec_event OF
+  3 .. 8:
+    fcg_timer_Tick_cnt := TIME#1s;
+    fcg_timer_Tick_run := true;
+  END_CASE;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * operate outputs                              * *)
+
+IF fcg_exec_event &gt; 2 THEN
+  CASE fcg_exec_event OF
+  3:
+    (* outputs for [OnLedA] *)
+    %QX55.1 := true;
+  4:
+    (* outputs for [OnLedB] *)
+    %QX55.2 := true;
+  5:
+    (* outputs for [OnLedC] *)
+    %QX55.3 := true;
+  6:
+    (* outputs for [OffLedA] *)
+    %QX55.1 := false;
+  7:
+    (* outputs for [OffLedB] *)
+    %QX55.2 := false;
+  8:
+    (* outputs for [OffLedC] *)
+    %QX55.3 := false;
+  END_CASE;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * end execution loop                           * *)
+
+END_WHILE;
+
+
+
+
+(* ************************************************ *)
+(* * executor core cyclic code: end               * *)
+(* ************************************************ *)
+
+
+
+(* ************************************************ *)
+(* CodeGenerator: Generated Code Ends Here          *)
+(* ************************************************ *)
+</xhtml>
+</ST>
+</body>
+</pou>
+<pou name="fcg_event_lookup_f" pouType="function">
+<interface>
+  <returnType> <string /> </returnType>
+  <inputVars retain="false">
+    <variable name="IDX">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">event index</xhtml></documentation>
+    </variable>
+  </inputVars>
+  <localVars retain="false" constant="true">
+    <variable name="fcg_event_lookup">
+      <type>
+        <array>
+          <dimension lower="1" upper="8" />
+          <baseType> <string length="10" /> </baseType>
+        </array>
+      </type>
+      <initialValue> 
+        <arrayValue> 
+          <value> <simpleValue value="&apos;PushButton&apos;" /> </value>
+          <value> <simpleValue value="&apos;Tick&apos;" /> </value>
+          <value> <simpleValue value="&apos;OnLedA&apos;" /> </value>
+          <value> <simpleValue value="&apos;OnLedB&apos;" /> </value>
+          <value> <simpleValue value="&apos;OnLedC&apos;" /> </value>
+          <value> <simpleValue value="&apos;OffLedA&apos;" /> </value>
+          <value> <simpleValue value="&apos;OffLedB&apos;" /> </value>
+          <value> <simpleValue value="&apos;OffLedC&apos;" /> </value>
+        </arrayValue> 
+      </initialValue> 
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">event name lookup table</xhtml></documentation>
+    </variable>
+  </localVars>
+</interface>
+<body>
+<ST>
+<xhtml xmlns="http://www.w3.org/1999/xhtml">fcg_event_lookup_f := fcg_event_lookup[IDX];
+</xhtml></ST>
+</body>
+</pou>
+<pou name="fcg_state_lookup_f" pouType="function">
+<interface>
+  <returnType> <string /> </returnType>
+  <inputVars retain="false">
+    <variable name="GID">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">generator id</xhtml></documentation>
+    </variable>
+    <variable name="IDX">
+      <type> <INT /> </type>
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">state index</xhtml></documentation>
+    </variable>
+  </inputVars>
+  <localVars retain="false" constant="true">
+    <variable name="fcg_state_lookup_0">
+      <type>
+        <array>
+          <dimension lower="1" upper="6" />
+          <baseType> <string length="4" /> </baseType>
+        </array>
+      </type>
+      <initialValue> 
+        <arrayValue> 
+          <value> <simpleValue value="&apos;On0&apos;" /> </value>
+          <value> <simpleValue value="&apos;On1&apos;" /> </value>
+          <value> <simpleValue value="&apos;On2&apos;" /> </value>
+          <value> <simpleValue value="&apos;Off2&apos;" /> </value>
+          <value> <simpleValue value="&apos;Off1&apos;" /> </value>
+          <value> <simpleValue value="&apos;#6&apos;" /> </value>
+        </arrayValue> 
+      </initialValue> 
+      <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">state name lookup for generator [Blink3]</xhtml></documentation>
+    </variable>
+  </localVars>
+</interface>
+<body>
+<ST>
+<xhtml xmlns="http://www.w3.org/1999/xhtml">fcg_state_lookup_f:=&apos;&apos;;
+CASE GID OF
+0: fcg_state_lookup_f := fcg_state_lookup_0[IDX];
+
+
+END_CASE;
+IF LEN(fcg_state_lookup_f) = 0 THEN
+  fcg_state_lookup_f := CONCAT(&apos;s&apos;,INT_TO_STRING(IDX));
+END_IF;
+</xhtml></ST>
+</body>
+</pou>
+</pous>
+</types>
+<instances>
+  <configurations />
+</instances>
+</project>

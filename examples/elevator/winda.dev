@@ -1,0 +1,410 @@
+% Device configuration for the LRT elevator setup.
+%
+% Signal values are read from/written to the KBUS on a
+% WAGO IPC. Internally, a background tasks uses WAGO
+% suplied implementation of the KBUS protocol to
+% acces an IEC process image. Faudes bitaddresses refer
+% to the bit position of signal values in the image.
+%
+% April 2016
+ 
+ 
+<WagoDevice name="KbusDevice">
+
+<TimeScale value="10"/>           % 10ms <> 1ftu
+<SampleInterval value="1000"/>    % 1000usec
+<SynchronousWrite value="true"/>  % physcal write image in backgroundtask
+
+
+<EventConfiguration>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Sensors
+%
+%  Cabin
+%
+
+%%% Cabin sensor: arrive at floor 0 
+"c_ar0"      
+<Sensor> <Triggers> 0 +PosEdge+ </Triggers> </Sensor>
+  
+%%% Cabin sensor: leave floor 0 
+"c_lv0"         
+<Sensor> <Triggers> 0 +NegEdge+ </Triggers> </Sensor>
+
+%%% Cabin sensor: arrive at floor 1 
+"c_ar1"         
+<Sensor> <Triggers> 1 +PosEdge+ </Triggers> </Sensor>
+
+%%% Cabin sensor: leave floor 1 
+"c_lv1"
+<Sensor> <Triggers> 1 +NegEdge+ </Triggers> </Sensor>
+
+%%% Cabin sensor: arrive at floor 2 
+"c_ar2"         
+<Sensor> <Triggers> 2 +PosEdge+ </Triggers> </Sensor>
+
+%%% Cabin sensor: leave floor 2 
+"c_lv2"
+<Sensor> <Triggers> 2 +NegEdge+ </Triggers> </Sensor>
+
+%%% Cabin sensor: arrive slow sensor floor 0 from top
+"c_slwtop0"         
+<Sensor> <Triggers> 3 +PosEdge+ </Triggers> </Sensor>
+
+%%% Cabin sensor: arrive slow sensor floor 1 from bottom
+"c_slwbot1"
+<Sensor> <Triggers> 4 +PosEdge+ </Triggers> </Sensor>
+
+%%% Cabin sensor: arrive slow sensor floor 1 from top
+"c_slwtop1"         
+<Sensor> <Triggers> 5 +PosEdge+ </Triggers> </Sensor>
+
+%%% Cabin sensor: arrive slow sensor floor 2 from bottom
+"c_slwbot2"
+<Sensor> <Triggers> 6 +PosEdge+ </Triggers> </Sensor>
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Doors
+%
+
+%%% Door sensor: door floor 0 reached closed position
+"d0_arcl"
+<Sensor> <Triggers> 8 +PosEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 0 leaving closed position
+"d0_lvcl"
+<Sensor> <Triggers> 8 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 0 reached open position
+"d0_arop"
+<Sensor> <Triggers> 7 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 0 leaving open position
+"d0_lvop"
+<Sensor> <Triggers> 7 +PosEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 1 reached closed position
+"d1_arcl"
+<Sensor> <Triggers> 10 +PosEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 1 leaving closed position
+"d1_lvcl"
+<Sensor> <Triggers> 10 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 1 reached open position
+"d1_arop"
+<Sensor> <Triggers> 9 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 1 leaving open position
+"d1_lvop"
+<Sensor> <Triggers> 9 +PosEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 2 reached closed position
+"d2_arcl"
+<Sensor> <Triggers> 12 +PosEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 2 leaving closed position
+"d2_lvcl"
+<Sensor> <Triggers> 12 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 2 reached open position
+"d2_arop"
+<Sensor> <Triggers> 11 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: door floor 2 leaving open position
+"d2_lvop"
+<Sensor> <Triggers> 11 +PosEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: light barrier floor 0 occupied
+"d0_bl"
+<Sensor> <Triggers> 13 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: light barrier floor 0 released
+"d0_rl"
+<Sensor> <Triggers> 13 +PosEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: light barrier floor 1 occupied
+"d1_bl"
+<Sensor> <Triggers> 14 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: light barrier floor 1 released
+"d1_rl"
+<Sensor> <Triggers> 14 +PosEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: light barrier floor 2 occupied
+"d2_bl"
+<Sensor> <Triggers> 15 +NegEdge+ </Triggers> </Sensor>
+
+%%% Door sensor: light barrier floor 2 released
+"d2_rl"
+<Sensor> <Triggers> 15 +PosEdge+ </Triggers> </Sensor>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Operator outside
+%
+
+%%% Opertor sensor: button up at floor 0 pressed
+"b0_up"
+<Sensor> <Triggers> 16 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: button up at floor 0 released
+"b0_rel"
+<Sensor> <Triggers> 16 +NegEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: button down at floor 1 pressed
+"b1_down"
+<Sensor> <Triggers> 17 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: button up at floor 1 pressed
+"b1_up"
+<Sensor> <Triggers> 18 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: button down at floor 2 pressed
+"b2_down"
+<Sensor> <Triggers> 19 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: button up at floor 0 released
+"b2_rel"
+<Sensor> <Triggers> 19 +NegEdge+ </Triggers> </Sensor>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Operator inside
+%
+
+%%% Opertor sensor: button floor 0 pressed
+"bc_0"
+<Sensor> <Triggers> 20 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: button floor 1 pressed
+"bc_1"
+<Sensor> <Triggers> 21 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: button floor 2 pressed
+"bc_2"
+<Sensor> <Triggers> 22 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: allert button pressed
+"bc_all"
+<Sensor> <Triggers> 23 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: emergency stop button pressed
+"bc_estp"
+<Sensor> <Triggers> 24 +PosEdge+ </Triggers> </Sensor>
+
+%%% Opertor sensor: simulation overload button pressed
+"bc_sim"
+<Sensor> <Triggers> 25 +PosEdge+ </Triggers> </Sensor>
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Actuators
+%
+%  Cabin
+%
+
+%%% Cabin actuator: start motor upwards 
+"c_up" 
+<Actuator> <Actions> 1 +Clr+ 0 +Set+ </Actions> </Actuator>
+
+%%% Cabin actuator: start motor downwards 
+"c_down" 
+<Actuator> <Actions> 0 +Clr+ 1 +Set+ </Actions> </Actuator>
+
+%%% Cabin actuator: stop motor 
+"c_stp"  
+<Actuator> <Actions> 1 +Clr+ 0 +Clr+ </Actions> </Actuator>
+
+%%% Cabin actuator: activate slow motor  
+"c_slw" 
+<Actuator> <Actions> 2 +Set+ </Actions> </Actuator>
+
+%%% Cabin actuator: deactivate slow motor  
+"c_fst" 
+<Actuator> <Actions> 2 +Clr+ </Actions> </Actuator>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Doors
+%
+
+%%% Door actuator: start motor floor 0 to open door
+"d0_op"
+<Actuator> <Actions> 4 +Clr+ 3 +Set+ </Actions> </Actuator>
+
+%%% Door actuator: start motor floor 0 to close door
+"d0_cl"
+<Actuator> <Actions> 3 +Clr+ 4 +Set+ </Actions> </Actuator>
+
+%%% Door actuator: stop motor floor 0 
+"d0_stp"
+<Actuator> <Actions> 4 +Clr+ 3 +Clr+ </Actions> </Actuator>
+
+%%% Door actuator: start motor floor 1 to open door
+"d1_op"
+<Actuator> <Actions> 6 +Clr+ 5 +Set+ </Actions> </Actuator>
+
+%%% Door actuator: start motor floor 1 to close door
+"d1_cl"
+<Actuator> <Actions> 5 +Clr+ 6 +Set+ </Actions> </Actuator>
+
+%%% Door actuator: stop motor floor 1 
+"d1_stp"
+<Actuator> <Actions> 6 +Clr+ 5 +Clr+ </Actions> </Actuator>
+
+%%% Door actuator: start motor floor 2 to open door
+"d2_op"
+<Actuator> <Actions> 8 +Clr+ 7 +Set+ </Actions> </Actuator>
+
+%%% Door actuator: start motor floor 2 to close door
+"d2_cl"
+<Actuator> <Actions> 7 +Clr+ 8 +Set+ </Actions> </Actuator>
+
+%%% Door actuator: stop motor floor 2 
+"d2_stp"
+<Actuator> <Actions> 8 +Clr+ 7 +Clr+ </Actions> </Actuator>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Operator outside
+%
+
+%%% Operator actuator: illuminate button upstairs floor 0
+"l0_upon"
+<Actuator> <Actions> 9 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for button upstairs floor 0
+"l0_upoff"
+<Actuator> <Actions> 9 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate button downstairs floor 1
+"l1_downon"
+<Actuator> <Actions> 10 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for button downstairs floor 1
+"l1_downoff"
+<Actuator> <Actions> 10 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate button upstairs floor 1
+"l1_upon" 
+<Actuator> <Actions> 11 +Set+ </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for button upstairs floor 1
+"l1_upoff"
+<Actuator> <Actions> 11 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate button downstairs floor 2
+"l2_downon"
+<Actuator> <Actions> 12 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for button downstairs floor 2
+"l2_downoff"
+<Actuator> <Actions> 12 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate indicator display floor 0
+"ls0_on"
+<Actuator> <Actions> 13 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for indicator display floor 0
+"ls0_off"
+<Actuator> <Actions> 13 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate indicator display floor 1
+"ls1_on"
+<Actuator> <Actions> 14 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for indicator display floor 1
+"ls1_off"
+<Actuator> <Actions> 14 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate indicator display floor 2
+"ls2_on"
+<Actuator> <Actions> 15 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for indicator display floor 2
+"ls2_off"
+<Actuator> <Actions> 15 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate drive direction display upwards
+"ld_upon"
+<Actuator> <Actions> 17 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for drive direction display upwards
+"ld_upoff"
+<Actuator> <Actions> 17 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate drive direction display downwards
+"ld_downon"
+<Actuator> <Actions> 16 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for drive direction display downwards
+"ld_downoff"
+<Actuator> <Actions> 16 +Clr+  </Actions> </Actuator>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Operator inside
+%
+
+%%% Operator actuator: illuminate button floor 0
+"lc0_on"
+<Actuator> <Actions> 18 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for button floor 0
+"lc0_off"
+<Actuator> <Actions> 18 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate button floor 0
+"lc1_on"
+<Actuator> <Actions> 19 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for button floor 0
+"lc1_off"
+<Actuator> <Actions> 19 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate button floor 0
+"lc2_on"
+<Actuator> <Actions> 20 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for button floor 0
+"lc2_off"
+<Actuator> <Actions> 20 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate allert button
+"lc_allon"
+<Actuator> <Actions> 21 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for allert button
+"lc_alloff"
+<Actuator> <Actions> 21 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate emergency stop button
+"lc_estpon"
+<Actuator> <Actions> 22 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for emergency stop button
+"lc_estpoff"
+<Actuator> <Actions> 22 +Clr+  </Actions> </Actuator>
+
+%%% Operator actuator: illuminate simulation overload button
+"lc_simon"
+<Actuator> <Actions> 23 +Set+  </Actions> </Actuator>
+
+%%% Operator actuator: turn off light for simulation overload button
+"lc_simoff"
+<Actuator> <Actions> 23 +Clr+  </Actions> </Actuator>
+
+
+</EventConfiguration>
+
+</WagoDevice>
+
+

@@ -1,0 +1,77 @@
+# Makefile for Teensy 3.1 / Teensy 3.2
+
+# Target Kinetis K20 with "halfk" bootloader (original Teensy 3.2 board)
+
+# Note: no strict dependencies w.r.t. libraries, use "make clean" after changes.
+
+# application base name
+TARGET = blink_k20
+
+# first target becomes default
+all: $(TARGET).load
+
+# configurable options
+OPTIONS = -DF_CPU=72000000 
+
+# set Freescale K20 in Teensy 3.2 variant
+OPTIONS += -D__MK20DX256__ 
+
+# location of support files
+LIBK20 = ../libk20
+VPATH += $(LIBK20)
+
+# CFLAGS = compiler options for C 
+CFLAGS = -Wall -g -Os -mcpu=cortex-m4 -mthumb -nostdlib -MMD $(OPTIONS) -I. -I$(LIBK20)
+
+# linker options
+LDFLAGS = -Os -Wl,--gc-sections -mcpu=cortex-m4 -mthumb -T$(LIBK20)/mk20dx256.ld
+
+# additional libraries to link
+LIBS =
+
+# borrow arduoino cross compiler / tools (OsX)
+TOOLSPATH = /Applications/Arduino.app/Contents/Java/hardware/tools
+COMPILERPATH = /Applications/Arduino.app/Contents/Java/hardware/tools/arm/bin
+
+# borrow arduoino cross compiler / tools (Linux)
+#TOOLSPATH = /opt/arduino-1.6.12/hardware/tools
+#COMPILERPATH = /opt/arduino-1.6.12/hardware/tools/arm/bin
+
+# compilers / tools
+CC = $(COMPILERPATH)/arm-none-eabi-gcc
+OBJCOPY = $(COMPILERPATH)/arm-none-eabi-objcopy
+SIZE = $(COMPILERPATH)/arm-none-eabi-size
+
+# code generator CompileDES
+CDES = ../../build/compiledes
+
+
+# supporting C files
+C_FILES := mk20dx256.c usb_serial.c
+OBJS := $(C_FILES:.c=.o) 
+
+# generate code
+%.c: %.cgc $(CDES)
+	$(CDES) -t k20 -o $@ $< 
+
+# compile
+%.o: %.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+# use provided link script
+%.elf: $(OBJS) %.o mk20dx256.ld
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(basename $@).o $(LIBS)
+
+# dump hex
+%.hex: %.elf
+	$(SIZE) $<
+	$(OBJCOPY) -O ihex -R .eeprom $< $@
+
+# upload
+%.load: %.hex
+	$(TOOLSPATH)/teensy_post_compile -test -verbose -file=$(basename $@) -path=$(shell pwd) -tools=$(abspath $(TOOLSPATH)) -reboot -board=TEENSY31
+
+
+# clean
+clean:
+	rm -f *.o *.d $(TARGET).elf $(TARGET).hex

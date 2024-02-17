@@ -1,0 +1,563 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+  xmlns="http://www.plcopen.org/xml/tc6.xsd"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.plcopen.org/xml/tc6.xsd http://www.plcopen.org/xml/tc6.xsd" >
+<fileHeader
+  companyName="FGDES/LRT"
+  creationDateTime="2017-03-08T22:44:54"
+  productName="CompileDES"
+  productVersion="3.09" />
+<contentHeader
+  name="Blink_Pox_B_2017_02"
+  version="1" >
+  <coordinateInfo>
+    <fbd><scaling x="1" y="1"/></fbd>
+    <ld><scaling x="1" y="1"/></ld>
+    <sfc><scaling x="1" y="1"/></sfc>
+  </coordinateInfo>
+</contentHeader>
+<types>
+<dataTypes />
+<pous>
+<pou name="fcg_cyclic_fb" pouType="functionBlock">
+<interface>
+  <inputVars retain="false">
+    <variable name="RESET">
+      <type> <BOOL /> </type>
+      <initialValue> <simpleValue value="false" /> </initialValue>
+      <documentation><![CDATA[external reset]]></documentation>
+    </variable>
+  </inputVars>
+  <outputVars retain="false">
+    <variable name="STATUS">
+      <type> <BYTE /> </type>
+      <documentation><![CDATA[status (0x00 <> waiting, 0x01<>executing, 0x02<>err)]]></documentation>
+    </variable>
+  </outputVars>
+  <localVars retain="false">
+    <variable name="fcg_recent_event">
+      <type> <INT /> </type>
+      <documentation><![CDATA[recent event (0<>none)]]></documentation>
+    </variable>
+    <variable name="fcg_pending_events_0">
+      <type> <BYTE /> </type>
+      <documentation><![CDATA[pending input events incl timer elapse]]></documentation>
+    </variable>
+    <variable name="fcg_enabled_events_0">
+      <type> <BYTE /> </type>
+      <documentation><![CDATA[events enabled by all generators]]></documentation>
+    </variable>
+    <variable name="fcg_parallel_state_0">
+      <type> <INT /> </type>
+      <documentation><![CDATA[parallel state]]></documentation>
+    </variable>
+    <variable name="fcg_parallel_state_1">
+      <type> <INT /> </type>
+      <documentation><![CDATA[parallel state]]></documentation>
+    </variable>
+    <variable name="fcg_parallel_state_2">
+      <type> <INT /> </type>
+      <documentation><![CDATA[parallel state]]></documentation>
+    </variable>
+    <variable name="fcg_exec_event">
+      <type> <INT /> </type>
+      <initialValue> <simpleValue value="-1" /> </initialValue>
+      <documentation><![CDATA[executed event (-1<>init, 0<>none)]]></documentation>
+    </variable>
+    <variable name="fcg_sched_event">
+      <type> <INT /> </type>
+      <documentation><![CDATA[scheduled event (0<>none)]]></documentation>
+    </variable>
+    <variable name="fcg_line_level_0">
+      <type> <BOOL /> </type>
+      <documentation><![CDATA[line levels]]></documentation>
+    </variable>
+    <variable name="fcg_first_loop">
+      <type> <BOOL /> </type>
+      <documentation><![CDATA[loop flag]]></documentation>
+    </variable>
+    <variable name="fcg_timer_Tick_cnt">
+      <type> <TIME /> </type>
+      <documentation><![CDATA[timer states]]></documentation>
+    </variable>
+    <variable name="fcg_timer_Tick_run">
+      <type> <BOOL /> </type>
+      <documentation><![CDATA[timer states]]></documentation>
+    </variable>
+    <variable name="fcg_time_elapsed">
+      <type> <TIME /> </type>
+      <documentation><![CDATA[elapsed time since last invokation]]></documentation>
+    </variable>
+    <variable name="fcg_aux_executables_0">
+      <type> <BYTE /> </type>
+      <documentation><![CDATA[enabled events that can be executed]]></documentation>
+    </variable>
+    <variable name="fcg_aux_wordret">
+      <type> <BYTE /> </type>
+      <documentation><![CDATA[aux maths and stack variables ]]></documentation>
+    </variable>
+    <variable name="fcg_aux_edge">
+      <type> <BOOL /> </type>
+      <documentation><![CDATA[aux maths and stack variables ]]></documentation>
+    </variable>
+    <variable name="fcg_aux_wordaddr">
+      <type> <INT /> </type>
+      <documentation><![CDATA[aux maths and stack variables ]]></documentation>
+    </variable>
+    <variable name="fcg_aux_bitaddr">
+      <type> <INT /> </type>
+      <documentation><![CDATA[aux maths and stack variables ]]></documentation>
+    </variable>
+    <variable name="fcg_aux_bitmask">
+      <type> <BYTE /> </type>
+      <documentation><![CDATA[aux maths and stack variables ]]></documentation>
+    </variable>
+    <variable name="" address="%IX54.1">
+      <type> <BOOL /> </type>
+      <documentation><![CDATA[physical input]]></documentation>
+    </variable>
+    <variable name="" address="%QX55.1">
+      <type> <BOOL /> </type>
+      <documentation><![CDATA[physical output]]></documentation>
+    </variable>
+    <variable name="" address="%QX55.2">
+      <type> <BOOL /> </type>
+      <documentation><![CDATA[physical output]]></documentation>
+    </variable>
+    <variable name="" address="%QX55.3">
+      <type> <BOOL /> </type>
+      <documentation><![CDATA[physical output]]></documentation>
+    </variable>
+    <variable name="fcg_systime_ton">
+      <type> <derived name="TON" /> </type>
+      <documentation><![CDATA[iec timer to simulate system time]]></documentation>
+    </variable>
+    <variable name="fcg_systime_recent">
+      <type> <TIME /> </type>
+      <documentation><![CDATA[iec timer to simulate system time]]></documentation>
+    </variable>
+    <variable name="fcg_systime_now">
+      <type> <TIME /> </type>
+      <documentation><![CDATA[iec timer to simulate system time]]></documentation>
+    </variable>
+  </localVars>
+</interface>
+<body>
+<ST>
+<![CDATA[
+(* ************************************************ *)
+(* CodeGenerator: Target IEC 61131 Structured Text  *)
+(* ************************************************ *)
+
+
+(* CompileDES 3.09 (using libFAUDES 2.28a) *)
+(* Configuration: Blink_Pox_B_2017_02 *)
+
+
+
+(* ************************************************ *)
+(* * executor core cyclic code: reset/initialise  * *)
+(* ************************************************ *)
+
+
+(* ************************************************ *)
+(* * reset internal state                         * *)
+
+(* set internal reset flag *)
+IF RESET THEN
+    fcg_exec_event := -1;
+END_IF;
+
+(* do reset core *)
+IF fcg_exec_event = -1 THEN
+  (* clear status *)
+  STATUS := 0;
+  (* set initial state *)
+  fcg_parallel_state_0 := 1;
+  fcg_parallel_state_1 := 1;
+  fcg_parallel_state_2 := 1;
+  (* clear scheduled event *)
+  fcg_sched_event := 0;
+  (* clear recent event *)
+  fcg_recent_event := 0;
+  (* clear pending/enabled events *)
+  fcg_pending_events_0 := BYTE#0;
+  fcg_enabled_events_0 := BYTE#0;
+  (* reset timer *)
+  fcg_timer_Tick_run := false;
+  fcg_timer_Tick_cnt := TIME#1s;
+END_IF;
+
+(* do reset/track systime *)
+IF fcg_exec_event = -1  THEN
+  fcg_systime_ton(IN:=false);
+  fcg_systime_recent := TIME#0ms;
+END_IF;
+fcg_systime_ton(IN:=true, PT:=TIME#2h, ET=>fcg_systime_now);
+fcg_time_elapsed := SUB_TIME(fcg_systime_now,fcg_systime_recent);
+IF fcg_systime_now < TIME#1h THEN
+  fcg_systime_recent := fcg_systime_now;
+ELSE
+  fcg_systime_ton(IN:=false, PT:=TIME#2h);
+  fcg_systime_ton(IN:=true, PT:=TIME#2h);
+  fcg_systime_recent := TIME#0ms;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * bail out on external reset                   * *)
+
+IF RESET THEN
+    RETURN;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * update timer states                          * *)
+
+
+IF fcg_time_elapsed > TIME#0ms THEN
+  IF fcg_timer_Tick_run THEN
+    IF fcg_timer_Tick_cnt > fcg_time_elapsed THEN
+      fcg_timer_Tick_cnt := SUB_TIME(fcg_timer_Tick_cnt, fcg_time_elapsed);
+    ELSE
+      fcg_timer_Tick_cnt := TIME#0s;
+    END_IF;
+  END_IF;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * executor core cyclic code: begin             * *)
+(* ************************************************ *)
+
+
+
+(* ************************************************ *)
+(* * sense input events                           * *)
+
+(* init: reset all line data and generate statics *)
+IF fcg_exec_event = -1 THEN
+  fcg_line_level_0 := %IX54.1;
+  IF NOT fcg_line_level_0 THEN
+    (* negative value: trigger init event [PushButton] *)
+    fcg_pending_events_0 := fcg_pending_events_0 OR BYTE#16#01;
+  END_IF;
+END_IF;
+
+(* normal operation: read lines and detect edges *)
+IF fcg_exec_event <> -1 THEN
+  (* read line [%IX54.1] *)
+  fcg_aux_edge := %IX54.1;
+  IF fcg_aux_edge <> fcg_line_level_0 THEN
+    IF fcg_line_level_0 THEN
+      (* negative edge trigger input event [PushButton] *)
+      fcg_pending_events_0 := fcg_pending_events_0 OR BYTE#16#01;
+      fcg_sched_event := 0;
+    END_IF;
+    fcg_line_level_0 := fcg_aux_edge;
+  END_IF;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * sense timer elapse                           * *)
+
+IF fcg_timer_Tick_run AND (fcg_timer_Tick_cnt <= TIME#0ms) THEN
+  fcg_timer_Tick_run := false;
+  fcg_pending_events_0 := fcg_pending_events_0 OR BYTE#16#02;
+  fcg_sched_event := 0;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * event execution loop                         * *)
+
+(* clear status to waiting *)
+STATUS := 0;
+(* set entry flag *)
+fcg_first_loop := true;
+WHILE true DO
+
+
+
+(* ************************************************ *)
+(* * update enabled events after execution        * *)
+
+(* if event was executed (and on initialisation) *)
+IF fcg_exec_event <> 0 THEN
+  (* set all to enabled *)
+  fcg_enabled_events_0 := BYTE#16#ff;
+
+  (* restricting enabled events by [Blink3] *)
+  CASE fcg_parallel_state_0 OF
+  1:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#07;
+  2:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#0b;
+  3:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#13;
+  4:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#23;
+  5:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#43;
+  6:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#83;
+  END_CASE;
+
+  (* restricting enabled events by [Delay] *)
+  CASE fcg_parallel_state_1 OF
+  1:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#fd;
+  2:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#03;
+  END_CASE;
+
+  (* restricting enabled events by [WaitButton] *)
+  CASE fcg_parallel_state_2 OF
+  1:
+    fcg_enabled_events_0 := fcg_enabled_events_0 AND BYTE#16#fb;
+  END_CASE;
+
+  (* dispose event *)
+  fcg_exec_event := 0;
+  fcg_sched_event := 0;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * schedule next event to execute               * *)
+
+IF fcg_sched_event = 0 THEN
+
+  (* setup candidate set to "pending or internal" *)
+  fcg_aux_executables_0 := fcg_pending_events_0 OR BYTE#16#fc;
+  (* restrict candidate set by "enabled" *)
+  fcg_aux_executables_0 := fcg_aux_executables_0 AND fcg_enabled_events_0;
+
+  (* find highest priority event (lowest bitaddress) *)
+  fcg_sched_event := 0;
+  IF NOT ( fcg_aux_executables_0 = BYTE#0 ) THEN
+    IF ( fcg_aux_executables_0 AND BYTE#16#0f ) <> BYTE#0 THEN
+      IF ( fcg_aux_executables_0 AND BYTE#16#03 ) <> BYTE#0 THEN
+        IF ( fcg_aux_executables_0 AND BYTE#16#01 ) <> BYTE#0 THEN
+          fcg_sched_event := 1;
+        ELSE
+          fcg_sched_event := 2;
+        END_IF;
+      ELSE
+        IF ( fcg_aux_executables_0 AND BYTE#16#04 ) <> BYTE#0 THEN
+          fcg_sched_event := 3;
+        ELSE
+          fcg_sched_event := 4;
+        END_IF;
+      END_IF;
+    ELSE
+      IF ( fcg_aux_executables_0 AND BYTE#16#30 ) <> BYTE#0 THEN
+        IF ( fcg_aux_executables_0 AND BYTE#16#10 ) <> BYTE#0 THEN
+          fcg_sched_event := 5;
+        ELSE
+          fcg_sched_event := 6;
+        END_IF;
+      ELSE
+        IF ( fcg_aux_executables_0 AND BYTE#16#40 ) <> BYTE#0 THEN
+          fcg_sched_event := 7;
+        ELSE
+          fcg_sched_event := 8;
+        END_IF;
+      END_IF;
+    END_IF;
+  END_IF;
+
+  (* remove scheduled event from pending events *)
+  IF fcg_sched_event > 0 THEN
+    fcg_aux_bitaddr := fcg_sched_event;
+    fcg_aux_bitaddr := fcg_aux_bitaddr - 1;
+    fcg_aux_wordaddr := fcg_aux_bitaddr / 8;
+    fcg_aux_bitaddr := fcg_aux_bitaddr MOD 8;
+    fcg_aux_bitmask := SHL( IN:=BYTE#16#01 , N:=fcg_aux_bitaddr );
+    fcg_pending_events_0 := fcg_pending_events_0 AND (NOT fcg_aux_bitmask );
+  END_IF;
+
+  (* detect sync error *)
+  IF fcg_sched_event = 0 THEN
+    fcg_aux_wordret := fcg_pending_events_0;
+    IF NOT ( fcg_aux_wordret = BYTE#0 ) THEN
+      STATUS := STATUS OR BYTE#16#02;
+    END_IF;
+  END_IF;
+
+  (* cancel pending events if no event could be scheduled  *)
+  IF fcg_sched_event = 0 THEN
+    fcg_pending_events_0 := BYTE#0;
+  END_IF;
+
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * break execution loop                         * *)
+
+IF fcg_sched_event = 0 THEN EXIT; END_IF;
+fcg_first_loop := false;
+
+
+
+(* ************************************************ *)
+(* * execute scheduled event                      * *)
+
+IF fcg_sched_event <> 0 THEN
+
+  fcg_exec_event := fcg_sched_event;
+  fcg_sched_event := 0;
+  STATUS := STATUS OR BYTE#16#01;
+
+  (* execute event for [Blink3] *)
+  CASE fcg_parallel_state_0 OF
+  1:
+    CASE fcg_exec_event OF
+    3:
+      fcg_parallel_state_0 := 2;
+    END_CASE;
+  2:
+    CASE fcg_exec_event OF
+    4:
+      fcg_parallel_state_0 := 3;
+    END_CASE;
+  3:
+    CASE fcg_exec_event OF
+    5:
+      fcg_parallel_state_0 := 4;
+    END_CASE;
+  4:
+    CASE fcg_exec_event OF
+    6:
+      fcg_parallel_state_0 := 5;
+    END_CASE;
+  5:
+    CASE fcg_exec_event OF
+    7:
+      fcg_parallel_state_0 := 6;
+    END_CASE;
+  6:
+    CASE fcg_exec_event OF
+    8:
+      fcg_parallel_state_0 := 1;
+    END_CASE;
+  END_CASE;
+
+  (* execute event for [Delay] *)
+  CASE fcg_parallel_state_1 OF
+  1:
+    CASE fcg_exec_event OF
+    3 .. 8:
+      fcg_parallel_state_1 := 2;
+    END_CASE;
+  2:
+    CASE fcg_exec_event OF
+    2:
+      fcg_parallel_state_1 := 1;
+    END_CASE;
+  END_CASE;
+
+  (* execute event for [WaitButton] *)
+  CASE fcg_parallel_state_2 OF
+  1:
+    CASE fcg_exec_event OF
+    1:
+      fcg_parallel_state_2 := 2;
+    8:
+      fcg_parallel_state_2 := 1;
+    END_CASE;
+  2:
+    CASE fcg_exec_event OF
+    1, 3:
+      fcg_parallel_state_2 := 2;
+    8:
+      fcg_parallel_state_2 := 1;
+    END_CASE;
+  END_CASE;
+
+  fcg_recent_event := fcg_exec_event;
+
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * operate timers                               * *)
+
+IF fcg_exec_event > 0 THEN
+  CASE fcg_exec_event OF
+  3 .. 8:
+    fcg_timer_Tick_cnt := TIME#1s;
+    fcg_timer_Tick_run := true;
+  END_CASE;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * operate outputs                              * *)
+
+IF fcg_exec_event > 2 THEN
+  CASE fcg_exec_event OF
+  3:
+    (* outputs for [OnLedA] *)
+    %QX55.1 := true;
+  4:
+    (* outputs for [OnLedB] *)
+    %QX55.2 := true;
+  5:
+    (* outputs for [OnLedC] *)
+    %QX55.3 := true;
+  6:
+    (* outputs for [OffLedA] *)
+    %QX55.1 := false;
+  7:
+    (* outputs for [OffLedB] *)
+    %QX55.2 := false;
+  8:
+    (* outputs for [OffLedC] *)
+    %QX55.3 := false;
+  END_CASE;
+END_IF;
+
+
+
+(* ************************************************ *)
+(* * end execution loop                           * *)
+
+END_WHILE;
+
+
+
+
+(* ************************************************ *)
+(* * executor core cyclic code: end               * *)
+(* ************************************************ *)
+
+
+
+(* ************************************************ *)
+(* CodeGenerator: Generated Code Ends Here          *)
+(* ************************************************ *)
+]]>
+</ST>
+</body>
+</pou>
+</pous>
+</types>
+<instances>
+  <configurations />
+</instances>
+</project>

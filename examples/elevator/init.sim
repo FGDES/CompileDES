@@ -1,0 +1,151 @@
+% Configuration-file for the interactive simulation of 
+% the elevator supervisor.
+%
+% This simulation closes the doors and operates cabin
+% manually
+
+<Executor>
+
+%
+% Specify generators
+%
+
+<Generators>
+
+% close door 0
+<Generator name="initDoor0">    
+<TransRel>
+1  d0_arcl   4
+1  d0_cl     2          
+2  d0_arcl   3          
+2  dtick     3          
+3  d0_stp    4
+4  dtick     4          
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+
+% close door 1
+<Generator name="initDoor1">    
+<TransRel>
+1  d1_arcl   4
+1  d1_cl     2          
+2  d1_arcl   3          
+2  dtick     3          
+3  d1_stp    4
+4  dtick     4          
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+
+% close door 2
+<Generator name="initDoor2">    
+<TransRel>
+1  d2_arcl   4
+1  d2_cl     2          
+2  d2_arcl   3          
+2  dtick     3          
+3  d2_stp    4
+4  dtick     4          
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+% operate cabin
+<Generator name="cabin">    
+<TransRel>
+% blink 
+1  c_slw       2
+2  l0_upon     3
+3  l2_downon   4
+4  b0_up      10
+4  b2_down    20 
+4  btick       5
+5  l0_upoff    6
+6  l2_downoff  7
+7  b0_up      10
+7  b2_down    20 
+7  btick       2
+% cabin down     
+10 l0_upon    11
+11 l2_downoff 12
+12 c_down     13
+13 btick      13
+13 c_ar2      13
+13 c_lv2      13
+13 c_ar0      15
+13 c_lv0      15
+13 b0_rel     15
+15 c_stp       2
+% cabin up
+20 l0_upoff   21
+21 l2_downon  22
+22 c_up       23
+23 btick      23
+23 c_ar0      23
+23 c_lv0      23
+23 c_ar2      25
+23 c_lv2      25
+23 b2_rel     25
+25 c_stp       2
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+</Generators>
+
+% specify event attributes
+<SimEventAttributes>
+
+% negative priority for senseor events
+"d0_arcl"       
+<Priority> -1  </Priority>
+"d1_arcl"       
+<Priority> -1  </Priority>
+"d2_arcl"       
+<Priority> -1  </Priority>
+"b0_up"       
+<Priority> -1  </Priority>
+"b0_rel"       
+<Priority> -1  </Priority>
+"b2_down"       
+<Priority> -1  </Priority>
+"b2_rel"       
+<Priority> -1  </Priority>
+
+% positive priority for actuator events
+"d0_cl"       
+<Priority> 1  </Priority>
+"d1_cl"       
+<Priority> 1  </Priority>
+"d2_cl"       
+<Priority> 1  </Priority>
+"d0_stp"       
+<Priority> 1  </Priority>
+"d1_stp"       
+<Priority> 1  </Priority>
+"d2_stp"       
+<Priority> 1  </Priority>
+"c_up"       
+<Priority> 1  </Priority>
+"c_down"       
+<Priority> 1  </Priority>
+"c_stp"       
+<Priority> 1  </Priority>
+"c_slw"       
+<Priority> 1  </Priority>
+
+% timer event
+"dtick"
+<Stochastic> +Delay+  +Uniform+  <Parameter> 50 51 </Parameter> </Stochastic>
+
+% timer event
+"btick"
+<Stochastic> +Delay+  +Uniform+  <Parameter> 100 101 </Parameter> </Stochastic>
+
+% end
+</SimEventAttributes>
+</Executor>
+ 

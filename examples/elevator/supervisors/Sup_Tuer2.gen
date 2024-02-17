@@ -1,0 +1,96 @@
+<Generator>
+"SupConNB((Mod_Tuer2),(Mod_Tuer2||Sp...ixClosure(System_1)))) [minstate]))" 
+
+% 
+%  Statistics for SupConNB((Mod_Tuer2),(Mod_Tuer2||Sp...ixClosure(System_1)))) [minstate]))
+% 
+%  States:        18
+%  Init/Marked:   1/4
+%  Events:        9
+%  Transitions:   58
+%  StateSymbols:  0
+%  Attrib. E/S/T: 3/0/0
+% 
+
+<Alphabet>
+d2_op         +C+           d2_arcl       d2_lvcl       d2_arop       d2_stp       
++C+           d2_cl         +C+           d2_lvop       bc_estp       bc_all       
+</Alphabet>
+
+<States>
+<Consecutive>
+1              18            
+</Consecutive>
+</States>
+
+<TransRel>
+1              d2_op         2             
+1              bc_estp       3             
+1              bc_all        1             
+2              d2_lvcl       8             
+2              bc_estp       4             
+2              bc_all        2             
+3              d2_op         4             
+3              bc_estp       1             
+3              bc_all        3             
+4              d2_lvcl       5             
+4              bc_estp       2             
+4              bc_all        4             
+5              d2_arop       6             
+5              d2_stp        7             
+5              bc_estp       8             
+5              bc_all        5             
+6              d2_stp        17            
+6              bc_estp       9             
+6              bc_all        6             
+7              d2_op         5             
+7              bc_estp       10            
+7              bc_all        7             
+8              d2_arop       9             
+8              d2_stp        10            
+8              bc_estp       5             
+8              bc_all        8             
+9              d2_stp        15            
+9              bc_estp       6             
+9              bc_all        9             
+10             d2_op         8             
+10             d2_cl         11            
+10             bc_estp       7             
+10             bc_all        10            
+11             d2_arcl       12            
+11             d2_stp        10            
+11             bc_estp       13            
+11             bc_all        11            
+12             d2_stp        1             
+12             bc_estp       14            
+12             bc_all        12            
+13             d2_arcl       14            
+13             d2_stp        7             
+13             bc_estp       11            
+13             bc_all        13            
+14             d2_stp        3             
+14             bc_estp       12            
+14             bc_all        14            
+15             d2_cl         16            
+15             bc_estp       17            
+15             bc_all        15            
+16             d2_lvop       11            
+16             bc_estp       18            
+16             bc_all        16            
+17             bc_estp       15            
+17             bc_all        17            
+18             d2_lvop       13            
+18             bc_estp       16            
+18             bc_all        18            
+</TransRel>
+
+<InitStates>
+1             
+</InitStates>
+
+<MarkedStates>
+1              3              15             17            
+</MarkedStates>
+
+
+</Generator>

@@ -1,0 +1,533 @@
+% Code Generator Configuration for Elevator Laboratory Experiment
+
+% Target: Embedded C for WAGO TPC 
+
+
+<CodeGenerator name="Elevator_2016_04">
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 1. Specify generators
+
+<Generators>
+"supervisors/Sup_KBE_TLS.gen"      % Kabine, Bedienelemente, Türen, Lichtschranken
+"supervisors/Sup_KBE.gen"          % Kabine, Bedienelemente
+"supervisors/Sup_TLS0.gen"         % Türen und Lichtschranken
+"supervisors/Sup_TLS1.gen"
+"supervisors/Sup_TLS2.gen"
+"supervisors/Sup_Tuer0.gen"
+"supervisors/Sup_Tuer1.gen"
+"supervisors/Sup_Tuer2.gen"
+"supervisors/Sup_SL.gen"               % Schnell- Langsamfahrt
+"supervisors/Sup_estp.gen"	       % Anzeige Notstop
+"supervisors/Sup_AE_ld.gen"	       % Anzeige Fahrtrichtung
+"supervisors/Sup_AE_Stockwerk_Kabine.gen" % Stockwerksanzeige Innen
+"supervisors/Sup_AE_Stockwerk_Anzeige.gen" % Stockwerksanzeige Aussen
+"supervisors/Sup_AE_Aussen_l0.gen"    % Anzeige für Anforderung der Kabine Aussen
+"supervisors/Sup_AE_Aussen_l1.gen"    % Anzeige für Anforderung der Kabine Aussen
+"supervisors/Sup_AE_Aussen_l2.gen"    % Anzeige für Anforderung der Kabine Aussen
+</Generators> 
+ 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 2. Specify event execution semantics
+<EventConfiguration>
+
+%%%%%%%%%  input events
+
+%%% Cabin sensor: arrive at floor 0 
+<Event name="c_ar0"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;0)" +PosEdge+ </Triggers> </Input> </Event>
+  
+%%% Cabin sensor: leave floor 0          
+<Event name="c_lv0"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;0)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive at floor 1 
+<Event name="c_ar1"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;1)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: leave floor 1 
+<Event name="c_lv1"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;1)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive at floor 2          
+<Event name="c_ar2"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;2)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: leave floor 2 
+<Event name="c_lv2"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;2)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive slow sensor floor 0 from top         
+<Event name="c_slwtop0"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;3)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive slow sensor floor 1 from bottom
+<Event name="c_slwbot1"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;4)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive slow sensor floor 1 from top         
+<Event name="c_slwtop1"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;5)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive slow sensor floor 2 from bottom
+<Event name="c_slwbot2"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;6)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 0 reached closed position
+<Event name="d0_arcl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;0)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 0 leaving closed position
+<Event name="d0_lvcl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;0)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 0 reached open position
+<Event name="d0_arop"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;7)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 0 leaving open position
+<Event name="d0_lvop"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[0] &amp; (1&lt;&lt;7)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 1 reached closed position
+<Event name="d1_arcl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;2)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 1 leaving closed position
+<Event name="d1_lvcl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;2)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 1 reached open position
+<Event name="d1_arop"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;1)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 1 leaving open position
+<Event name="d1_lvop"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;1)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 2 reached closed position
+<Event name="d2_arcl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;4)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 2 leaving closed position
+<Event name="d2_lvcl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;4)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 2 reached open position
+<Event name="d2_arop"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;3)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 2 leaving open position
+<Event name="d2_lvop"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;3)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 0 occupied
+<Event name="d0_bl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;5)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 0 released
+<Event name="d0_rl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;5)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 1 occupied
+<Event name="d1_bl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;6)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 1 released
+<Event name="d1_rl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;6)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 2 occupied
+<Event name="d2_bl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;7)" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 2 released
+<Event name="d2_rl"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[1] &amp; (1&lt;&lt;7)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button up at floor 0 pressed
+<Event name="b0_up"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[2] &amp; (1&lt;&lt;0)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button down at floor 1 pressed
+<Event name="b1_down"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[2] &amp; (1&lt;&lt;1)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button up at floor 1 pressed
+<Event name="b1_up"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[2] &amp; (1&lt;&lt;2)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button down at floor 2 pressed
+<Event name="b2_down"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[2] &amp; (1&lt;&lt;3)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: dest button floor 0 pressed
+<Event name="bc_0"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[2] &amp; (1&lt;&lt;4)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: dest button floor 1 pressed
+<Event name="bc_1"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[2] &amp; (1&lt;&lt;5)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: dest button floor 2 pressed
+<Event name="bc_2"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[2] &amp; (1&lt;&lt;6)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: allert button pressed
+<Event name="bc_all"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[2] &amp; (1&lt;&lt;7)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: emergency stop button pressed
+<Event name="bc_estp"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[3] &amp; (1&lt;&lt;0)" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: simulation overload button pressed
+<Event name="bc_sim"> <Input> <Priority val="100"/> <Triggers> "pimg_inputs[3] &amp; (1&lt;&lt;1)" +PosEdge+ </Triggers> </Input> </Event>
+
+
+%%%%%%%%%  output events
+
+%%% Cabin actuator: start motor upwards 
+<Event name="c_up"> <Output> <Priority val="100"/> <Actions> "{pimg_outputs[0] &amp;= ~(1&lt;&lt;1); pimg_outputs[0] |= (1&lt;&lt;0);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Cabin actuator: start motor downwards 
+<Event name="c_down"> <Output> <Priority val="100"/> <Actions> "{pimg_outputs[0] &amp;= ~(1&lt;&lt;0); pimg_outputs[0] |= (1&lt;&lt;1);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Cabin actuator: stop motor 
+<Event name="c_stp"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[0] &amp;= ~((1&lt;&lt;0) | (1&lt;&lt;1))" +Execute+ </Actions> </Output> </Event>
+
+%%% Cabin actuator: activate slow motor  
+<Event name="c_slw"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[0] |= (1&lt;&lt;2)" +Execute+ </Actions> </Output> </Event>
+
+%%% Cabin actuator: deactivate slow motor  
+<Event name="c_fst"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[0] &amp;= ~(1&lt;&lt;2)" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 0 to open door
+<Event name="d0_op"> <Output> <Priority val="100"/> <Actions> "{pimg_outputs[0] &amp;= ~(1&lt;&lt;4); pimg_outputs[0] |= (1&lt;&lt;3);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 0 to close door
+<Event name="d0_cl"> <Output> <Priority val="100"/> <Actions> "{pimg_outputs[0] &amp;= ~(1&lt;&lt;3); pimg_outputs[0] |= (1&lt;&lt;4);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: stop motor floor 0 
+<Event name="d0_stp"> <Output> <Priority val="100"/> <Actions>  "pimg_outputs[0] &amp;= ~((1&lt;&lt;3) | (1&lt;&lt;4))" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 1 to open door
+<Event name="d1_op"> <Output> <Priority val="100"/> <Actions> "{pimg_outputs[0] &amp;= ~(1&lt;&lt;6); pimg_outputs[0] |= (1&lt;&lt;5);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 1 to close door
+<Event name="d1_cl"> <Output> <Priority val="100"/> <Actions> "{pimg_outputs[0] &amp;= ~(1&lt;&lt;5); pimg_outputs[0] |= (1&lt;&lt;6);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: stop motor floor 1 
+<Event name="d1_stp"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[0] &amp;= ~((1&lt;&lt;5) | (1&lt;&lt;6))" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 2 to open door
+<Event name="d2_op"> <Output> <Priority val="100"/> <Actions> "{pimg_outputs[1] &amp;= ~(1&lt;&lt;0); pimg_outputs[0] |= (1&lt;&lt;7);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 2 to close door
+<Event name="d2_cl"> <Output> <Priority val="100"/> <Actions> "{pimg_outputs[0] &amp;= ~(1&lt;&lt;7); pimg_outputs[1] |= (1&lt;&lt;0);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Door actuator: stop motor floor 2 
+<Event name="d2_stp"> <Output> <Priority val="100"/> <Actions>  "{pimg_outputs[0] &amp;= ~(1&lt;&lt;7); pimg_outputs[1] &amp;= ~(1&lt;&lt;0);}" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate call button upstairs floor 0
+<Event name="l0_upon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] |= (1&lt;&lt;1)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for call button upstairs floor 0
+<Event name="l0_upoff"> <Output> <Priority val="100"/> <Actions>  "pimg_outputs[1] &amp;= ~(1&lt;&lt;1)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate call button downstairs floor 1
+<Event name="l1_downon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] |= (1&lt;&lt;2)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for call button downstairs floor 1
+<Event name="l1_downoff"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] &amp;= ~(1&lt;&lt;2)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate call button upstairs floor 1
+<Event name="l1_upon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] |= (1&lt;&lt;3)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for call button upstairs floor 1
+<Event name="l1_upoff"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] &amp;= ~(1&lt;&lt;3)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate call button downstairs floor 2
+<Event name="l2_downon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] |= (1&lt;&lt;4)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for call button downstairs floor 2
+<Event name="l2_downoff"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] &amp;= ~(1&lt;&lt;4)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate indicator display floor 0
+<Event name="ls0_on"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] |= (1&lt;&lt;5)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for indicator display floor 0
+<Event name="ls0_off"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] &amp;= ~(1&lt;&lt;5)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate indicator display floor 1
+<Event name="ls1_on"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] |= (1&lt;&lt;6)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for indicator display floor 1
+<Event name="ls1_off"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] &amp;= ~(1&lt;&lt;6)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate indicator display floor 2
+<Event name="ls2_on"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] |= (1&lt;&lt;7)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for indicator display floor 2
+<Event name="ls2_off"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[1] &amp;= ~(1&lt;&lt;7)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate drive direction display upwards
+<Event name="ld_upon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] |= (1&lt;&lt;1)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for drive direction display upwards
+<Event name="ld_upoff"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] &amp;= ~(1&lt;&lt;1)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate drive direction display downwards
+<Event name="ld_downon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] |= (1&lt;&lt;0)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for drive direction display downwards
+<Event name="ld_downoff"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] &amp;= ~(1&lt;&lt;0)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate dest button floor 0
+<Event name="lc0_on"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] |= (1&lt;&lt;2)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for dest button floor 0
+<Event name="lc0_off"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] &amp;= ~(1&lt;&lt;2)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate dest button floor 1
+<Event name="lc1_on"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] |= (1&lt;&lt;3)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for dest button floor 1
+<Event name="lc1_off"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] &amp;= ~(1&lt;&lt;3)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate dest button floor 2
+<Event name="lc2_on"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] |= (1&lt;&lt;4)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for dest button floor 2
+<Event name="lc2_off"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] &amp;= ~(1&lt;&lt;4)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate allert button
+<Event name="lc_allon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] |= (1&lt;&lt;5)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for allert button
+<Event name="lc_alloff"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] &amp;= ~(1&lt;&lt;5)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate emergency stop button
+<Event name="lc_estpon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] |= (1&lt;&lt;6)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for emergency stop button
+<Event name="lc_estpoff"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] &amp;= ~(1&lt;&lt;6)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate simulation overload button
+<Event name="lc_simon"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] |= (1&lt;&lt;7)" +Execute+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for simulation overload button
+<Event name="lc_simoff"> <Output> <Priority val="100"/> <Actions> "pimg_outputs[2] &amp;= ~(1&lt;&lt;7)" +Execute+ </Actions> </Output> </Event>
+
+
+%%%%%%%%%  internal events
+
+<Event name="vc_up12"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vc_up01"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vc_dw21"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vc_dw10"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vc_0stp"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vc_1stp"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vc_2stp"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vd0_arcl"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vd1_arcl"> <Internal> <Priority val="50"/> </Internal> </Event>
+<Event name="vd2_arcl"> <Internal> <Priority val="50"/> </Internal> </Event>
+
+%%%%%%%%%  timer events
+
+% delay door0 open
+<Event name="vd0_arop"> 
+<Internal> 
+<Priority val="100"/> 
+<Timer val="200ftu">  % 1ftu <> 10ms 
+<ResetEvents> d0_arop </ResetEvents>
+<StartEvents> d0_arop </StartEvents>
+<StopEvents/>
+</Timer>
+</Internal> 
+</Event>
+
+% delay door1 open
+<Event name="vd1_arop"> 
+<Internal> 
+<Priority val="100"/> 
+<Timer val="200ftu">  % 1ftu <> 10ms 
+<ResetEvents> d1_arop </ResetEvents>
+<StartEvents> d1_arop </StartEvents>
+<StopEvents/>
+</Timer>
+</Internal> 
+</Event>
+
+% delay door2 open
+<Event name="vd2_arop"> 
+<Internal> 
+<Priority val="100"/> 
+<Timer val="200ftu">  % 1ftu <> 10ms 
+<ResetEvents> d2_arop </ResetEvents>
+<StartEvents> d2_arop </StartEvents>
+<StopEvents/>
+</Timer>
+</Internal> 
+</Event>
+
+
+</EventConfiguration>
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 3. Target configuration parameters
+
+<TargetConfiguration>
+
+% Sensible code options for 32bit Linux
+<Prefix val="fcg"/>
+<WordType val="uint32_t"/>
+<WordSize val="32" />
+<IntegerType val="int16_t"/>
+<IntegerSize val="16"/>
+<ArrayForBitarray val="true"/>
+<BisectionForBitArray val="true"/>
+<ArrayForBitmasks val="true"/>
+<BitAddressArithmetic val="true"/>
+<ArrayForTransitions  val="true"/>
+<LoopPendingInputs val="true"/>
+<LoopEnabledOutputs val="true"/>
+<StrictEventSynchronisation val="false"/>
+
+
+% Additional code: include headers
+<IncludeBefore>
+<![CDATA[
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <inttypes.h>
+#include <unistd.h>
+#include <time.h>
+#include <sys/time.h>
+   
+// additional WAGO IPC functions libwpc
+extern int kbus_init(void);
+extern int kbus_shutdown(void);
+extern void start_kbus_thread(void);   
+extern int kbus_running(void);   
+extern void *kbus_lock_input_image(void);
+extern void *kbus_lock_output_image(void);
+extern void kbus_release_io_image(void);
+
+// process image
+uint8_t pimg_inputs[4];
+uint8_t pimg_outputs[4];     
+
+]]>
+</IncludeBefore>
+
+% Additional target code: main loop
+<IncludeAfter>
+<![CDATA[
+/* main loop (extended version to monitor performance) */ 
+int main(void) {
+  // system time as 32bit 
+  int32_t systime32;
+  struct timespec recent_sys;
+  int32_t recent_dec;     
+  int32_t recent_mon;     
+  long recent_loop;     
+  int loop_cnt;
+  double loop_sum;
+  long loop_max;
+  int errcnt;     
+  int execnt;     
+  int blink; 
+  // clear images    
+  int i; 
+  for(i=0; i<4;++i) pimg_inputs[i]=0;   
+  for(i=0; i<4;++i) pimg_outputs[i]=0;    
+  // start Kbus thread     
+  int res = kbus_init();   
+  if(res!=0) { 
+    printf("WAGI IPC Device: Fatal Kbus Error: cannot initialise (!)\n");  
+    exit(1);   
+  }
+  start_kbus_thread();     
+  int cnt=30;  
+  while((kbus_running()==0) && (cnt>0)) {    
+    printf("WAGI IPC Device: Waiting for Kbus initialisation to complete to start up\n");    
+    cnt--;     
+    sleep(1);  
+  }
+  if(cnt==0) { 
+    printf("WAGI IPC Device: Fatal Kbus Error: cannot initialise (!)\n");  
+    exit(1);   
+  }
+  // initialise time stemps     
+  clock_gettime(CLOCK_MONOTONIC,&recent_sys); 
+  systime32=0;    
+  recent_dec=0;   
+  recent_mon=0;  
+  recent_loop=recent_sys.tv_nsec; 
+  loop_cnt=0;
+  loop_sum=0;
+  loop_max=0; 
+  errcnt=0;
+  execnt=0;
+  // do loop
+  while(true) {
+    // get this cycle time of the day
+    struct timespec loopbeg;   
+    clock_gettime(CLOCK_MONOTONIC,&loopbeg); 
+    // read process image inputs    
+    static int failcnt=0;    
+    char* wimg_inputs = kbus_lock_input_image();     
+    if(kbus_running()==0) {  
+      if(failcnt==0) printf("WAGI IPC Device: Fatal Kbus Error: cannot read (!)\n");     
+      failcnt=50;
+    } else {     
+      if(failcnt>0) failcnt--;     
+      if(failcnt==0) for(i=0; i<4;++i) pimg_inputs[i]=wimg_inputs[i];    
+    }
+    kbus_release_io_image();     
+    // monitor driven by systime
+    if(fcg_status & 0x02) errcnt+=1;
+    if(fcg_status & 0x01) execnt+=1;
+    if(((systime32-recent_mon) >=1000)  && (fcg_status & 0x01)==0) {    
+      printf("[monitor %03.3fsec]",systime32 / 1000.0);    
+      if(loop_cnt >0)
+        printf(" (avg-loop %01.3fmsec max-loop %01.3fmsec)", 
+          loop_sum / (1000000.0 * loop_cnt), loop_max / 1000.0);
+      printf(" (exe #%02d)", execnt);
+      if(errcnt>0) 
+       printf(" (err #%02d)", errcnt);
+      loop_cnt=0;
+      loop_sum=0;
+      loop_max=0; 
+      printf("\n");
+      fflush(stderr);
+      execnt=0;
+      errcnt=0;
+      recent_mon += 1000;
+      if((systime32-recent_mon) >=10) recent_mon = systime32; // reset on more than 10ms jitter   
+      pimg_outputs[3] = (1 << (6+(blink % 2)));
+      blink++;   
+    } 
+    // update systime ms from clock     
+    int32_t dtsec = loopbeg.tv_sec - recent_sys.tv_sec;    
+    int32_t dtms = dtsec*1000 + (loopbeg.tv_nsec - recent_sys.tv_nsec)/1000000;
+    if(dtms>0) { 
+      recent_sys.tv_sec  +=  dtms /1000;     
+      recent_sys.tv_nsec += (dtms % 1000) *1000000;   
+      while(recent_sys.tv_nsec > 1000000000) {     
+        recent_sys.tv_nsec-=1000000000;
+        recent_sys.tv_sec+=1;    
+      }    
+      systime32 += dtms;  
+    }
+    // update 100Hz payload timers from systime
+    if(systime32 - recent_dec > 10) {
+      int16_t dtdec = (systime32 - recent_dec)/10;
+      recent_dec += dtdec*10;
+      fcg_timerdec(dtdec);
+    }      
+    // payload
+    fcg_cyclic();
+    // write process image outputs 
+    char* wimg_outputs = kbus_lock_output_image();   
+    for(i=0; i<4;++i) wimg_outputs[i]=pimg_outputs[i]; 
+    kbus_release_io_image(); 
+    // evaluate loop performance from clock
+    long dtnsec=loopbeg.tv_nsec-recent_loop;
+    if(loopbeg.tv_nsec < recent_loop) dtnsec += 1000000000;
+    loop_cnt++;
+    loop_sum+=dtnsec;
+    if(loop_max<dtnsec/1000) loop_max=dtnsec/1000;
+    recent_loop=loopbeg.tv_nsec;
+    // compensate this cycle for 2ms loop 
+    // note: with "chrt -f 99" this is of by 0.1/0.5ms (avg/max)
+    struct timespec loopend;   
+    struct timespec leftover;   
+    loopend.tv_sec=loopbeg.tv_sec;
+    loopend.tv_nsec=loopbeg.tv_nsec +2000000;
+    while(loopend.tv_nsec > 1000000000) {
+      loopend.tv_sec+=1;
+      loopend.tv_nsec-=1000000000;
+    }
+    clock_nanosleep(CLOCK_MONOTONIC,TIMER_ABSTIME,&loopend,&leftover);
+  }
+  // should have this in a signal handler
+  kbus_shutdown();   
+}  
+]]>
+</IncludeAfter>
+
+</TargetConfiguration>
+
+</CodeGenerator>
+
+
+

@@ -1,0 +1,5 @@
+<TimeConstraint>
+clockA        GE            10            
+clockA        LT            125           
+clockB        GT            100           
+</TimeConstraint>

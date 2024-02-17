@@ -1,0 +1,38 @@
+
+libFAUDES - Friedrich Alexander University Discrete Event Systems Library
+
+Copyright (C) 2006, Bernd Opitz.
+Copyright (C) 2008 - 2010, Thomas Moor, Klaus Schmidt, Sebastian Perk. 
+Copyright (C) 2011 - 2013, Thomas Moor, Klaus Schmidt
+
+
+===============================================================================
+
+OVERVIEW
+
+
+libFAUDES is a C++ library that implements data structures for the representation 
+of finite automata and algorithms for supervisory control within the framework 
+originally proposed by P.J. Ramadge and W.M. Wonham. The library provides an 
+implementation and evaluation basis for the further development of 
+algorithms for the analysis and synthesis of DESs.
+
+The core library sources are provided for free under conditions of the GNU Lesser 
+General Public License.  Different terms may apply to libFAUDES plug-ins.
+
+
+
+===============================================================================
+
+DOCUMENTATION
+
+===============================================================================
+
+libFAUDES ships with auto-generated HTML documentaion which can be
+accessed via ./doc/index.html. An online version is available at
+
+http://www.rt.eei.uni-erlangen.de/FGdes
+
+
+
+

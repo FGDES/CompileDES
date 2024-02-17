@@ -1,0 +1,342 @@
+% Example Configuration of Code Generator
+
+% This example configures the code generator to compile
+% a variation of the ATmega hello-world example "blink".
+% It has been validated with the avr-gcc toolchain including
+% tests on an ATmega328p board.
+
+
+<CodeGenerator name="Blink_Atm_2016_03">
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 1. Specify generators
+
+% The Generators section lists relevant generators to compile.
+% You may use either file names with paths relative to this
+% configuration file or explicit Generator sections.
+<Generators>
+
+<Generator name="Blink3">
+<TransRel>
+1 OnLedA  2
+2 OnLedB  3
+3 OnLedC  4
+4 Beep    5
+5 OffLedA 6
+6 OffLedB 7
+7 OffLedC 1
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+<Generator name="Delay">
+<TransRel>
+1 OnLedA  2
+1 OnLedB  2
+1 OnLedC  2
+1 OffLedA 2
+1 OffLedB 2
+1 OffLedC 2
+2 Tick    1
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+<Generator name="WaitButton">
+<TransRel>
+1 PushButton 2
+1 OffLedA    1
+2 PushButton 2
+2 OffLedA    1
+2 OnLedA     2
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+</Generators>
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 2. Specify event execution semantics
+
+<EventConfiguration>
+
+%
+% Output events to turn on/off LEDs on PC0, PC1 and PC2
+%
+% Target dependent:
+%
+% For the ATmega target, Set/Clr-actions directly refer to
+% digital IO pins. Here the address must be in the format
+% Pxz where x is a letter ranging from 'A' to 'F' and z is a
+% digit ranging from '0' to '7'. Exe-actions are the same as with
+% EmbeddedC and take any literal expression including assignments
+% and functioncalls.
+%
+%
+
+<Event name="OnLedA">
+<Output>
+<Priority val="20"/>
+<Actions> PC0 +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OnLedB">
+<Output>
+<Priority val="20"/>
+<Actions> PC1 +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OnLedC">
+<Output>
+<Priority val="20"/>
+<Actions> PC2 +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedA">
+<Output>
+<Priority val="20"/>
+<Actions> PC0 +Clr+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedB">
+<Output>
+<Priority val="20"/>
+<Actions> PC1 +Clr+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedC">
+<Output>
+<Priority val="20"/>
+<Actions> PC2 +Clr+ </Actions>
+</Output>
+</Event>
+
+<Event name="Beep">
+<Output>
+<Priority val="20"/>
+<Actions> "FCG_beep(100);" +Execute+ </Actions>
+</Output>
+</Event>
+
+
+%
+% Input event to sense keyswitch at PB4
+%
+% For the ATmega target the abstract address provided for
+% an edge trigger must literaly represent a port bit in the
+% notation Pxy with x indicating the port 'A' - 'F' and
+% the digit y specifies the bit on that port. Value-triggers
+% behave as with the EmbeddedC target and specify an expression  
+% that evaluates to a boolean value.
+%
+<Event name="PushButton">
+<Input>    
+<Priority val="10"/>
+<Triggers> PB4 +NegEdge+ +Static+ </Triggers>
+</Input>
+</Event>
+
+
+%
+% Internal timer event Tick
+%
+% Generated timer code is implemented as integer typed 
+% counters with one increment interpreted as one faudes-time
+% unit [ftu]. Target specific code is meant to relate ftu 
+% to some physical time unit by calling the generated
+% function "timerdec(int elapsed_ftu)" on a regular basis.
+% On the ATmega, the below sample code drives timers by a 
+% 100Hz interupt, i.e., with this configuration one ftu 
+% amounts to 10 ms. 
+% 
+
+<Event name="Tick">
+<Internal>    
+<Priority val="0"/>
+<Timer val="25ftu"> % initial value [25ftu=250ms]
+<ResetEvents>
+OnLedA OnLedB OnLedC OffLedA OffLedB OffLedC
+</ResetEvents>
+<StartEvents>
+OnLedA OnLedB OnLedC OffLedA OffLedB OffLedC
+</StartEvents>
+<StopEvents/>
+</Timer>
+</Internal>
+</Event>
+
+
+
+</EventConfiguration>
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 3. Target configuration parameters
+
+<TargetConfiguration>
+
+% Prefix to all generated symbols to mimique a namespace
+<Prefix val="FCG"/>
+
+% Elementary data type for words of bits; good choices
+% are architecture supported types, e.g. 8bit for ATmega
+<WordType val="unsigned char"/>
+<WordSize val="8" />
+
+% Elementary data type for indicees; must be a signed type
+% and must at least distinguish all present events and all
+% timer states; i.e. 8bit would be fine for this example. 
+% Note that code options impose further restrictions on 
+% adequate data types.
+<IntegerType val="int"/>
+<IntegerSize val="16"/>
+
+% Use arrays of words to represent bitarrays. If not set,
+% individual words will be used instead.
+<ArrayForBitarray val="true"/>
+
+% Conversion an event bitaddress to a word-index and a bitmask
+% can be done by look-up tabes (ArrayForBitmasks) or bit-shift
+% arithmetic.
+<ArrayForBitmasks val="false"/>
+<BitAddressArithmetic val="true"/>
+
+
+% Precompile transition relations to arrays of integers.
+% The size of the array for a transition relation is given by
+% "n + 2 x m" with "n" the number of states and "m" the number
+% of transitions. The arrays must be addressable by the integer
+% data type. For this hello world example, 8bit integers would do, 
+% however, typically this option requires at 16bit integers.
+<ArrayForTransitions  val="true"/>
+
+% Loop executing events events until no input event can be
+% scheduled. This option may circumvent issues caused by slow i/o
+% or degraded overalll performance due to competing tasks.
+<LoopPendingInputs val="false"/>
+
+% Loop executing events until neither input nor output events can 
+% be scheduled. Need to ensure that there are no strictly connected 
+% components with output events only. This option may circumvent 
+% issues caused by slow i/o or degraded overalll performance due to 
+% competing tasks.
+<LoopEnabledOutputs val="false"/>
+
+% For the ATmega target, heap memory is limited, so the use
+% of programm-memory is recommended when going for precompiled
+% arrays. The current code generator uses 16bit addresses and
+% therefore is limited to an overall range of 64Kbyte.
+<ATmegaProgmem val="true"/>
+
+% For the ATmega target, input pins can optionally be configured
+% to have an internal pull-up resistor.
+<ATmegaPullups val="true"/>
+
+% The below code snippets tailors the overall output to a self
+% contained programm to go with an ATmega328p as found on Arduino
+% Nano boards. This is for convenience only: you may likewise have 
+% an externally maintained application that includes the generated 
+% code and invokes the functions  FCG_cyclic() and FCG_timerdec()
+% in a cyclic fashion.
+
+<IncludeBefore>
+<![CDATA[
+// validated to compile with avr-gcc 4.8.1 
+// using "-Os -mmcu=atmega328p"
+
+// clock effective after re-initialisation of prescacler
+#define F_CPU 16000000UL  // 16MHz
+
+// std includes
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/pgmspace.h>
+
+// initialise system clock (ATmega328)
+void  FCG_initclk(void) {
+  CLKPR = (1<<CLKPCE);   // enable prescaler write access
+  CLKPR = 0x00;          // no clock prescale, i.e. f_cpu 16MHz
+}
+
+// initialise beep pio
+void  FCG_initbp(void) {
+  DDRC |= (1 << PC5);
+}
+
+// run 8bit timer0 at 16kHz to drive 100Hz interrupt (ATmega328)
+void  FCG_initt0(void) {
+  sei();                             // enable interrupts
+  TCNT0=0;                           // reset count
+  OCR0A=160;                         // set top to 160
+  TIMSK0= (1 << OCIE0A);             // interrupt on match top
+  TCCR0A= (1 << WGM01);              // clear-on-top mode
+  TCCR0B= (1 << CS00) | (1 << CS02); // run at clk_IO/1024 
+}
+
+// system time as 8bit value (updated by 100Hz interrupt)
+volatile unsigned char  FCG_systime;
+
+// time stemp of last request
+unsigned char  FCG_systime_recent;
+
+// read time elapse since last request
+unsigned char  FCG_systime_delta(void) {
+  unsigned char now= FCG_systime;
+  unsigned char dt= now-FCG_systime_recent;
+  FCG_systime_recent+= dt;
+  return dt;
+}
+
+// duration for which to beep (handled by 100Hz interrupt)
+volatile unsigned char FCG_beepcnt=0;
+
+// trigger beep by setting positve duration
+void FCG_beep(unsigned char dur) {
+  FCG_beepcnt=dur;
+}
+
+// 100Hz interrupt driven by timer0
+ISR(TIMER0_COMPA_vect){
+  // systime 100Hz
+  FCG_systime++;
+  // beep at 100Hz
+  if(FCG_beepcnt!=0) {
+    if(! ( PORTC & (1 << PC5) )) {
+      PORTC |= (1 << PC5);
+    } else {
+      PORTC &= ~(1 << PC5);
+      FCG_beepcnt--;
+    }
+  }
+}
+]]>
+</IncludeBefore>
+
+<IncludeAfter>
+<![CDATA[
+int main(void){
+  FCG_initclk();
+  FCG_initpio();
+  FCG_initt0();
+  FCG_initbp();
+  while(1) {
+   FCG_cyclic();
+   FCG_timerdec(FCG_systime_delta());
+  }
+  return 0;
+}
+]]>
+</IncludeAfter>
+
+</TargetConfiguration>
+
+
+% End of CodeGenerator section
+</CodeGenerator>

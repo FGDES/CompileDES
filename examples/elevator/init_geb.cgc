@@ -1,0 +1,486 @@
+% Code Generator Configuration for Elevator Laboratory Experiment
+
+% Target: IEC 61131 ST with GEB Automation toolchain
+% using the "WAGO_KBUS" platform.
+
+
+<CodeGenerator name="Init_2016_05">
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 1. Specify generators
+
+<Generators>
+
+% close door 0
+<Generator name="initDoor0">    
+<TransRel>
+1  d0_arcl   4
+1  d0_cl     2          
+2  d0_arcl   3          
+2  dtick     3          
+3  d0_stp    4
+4  dtick     4          
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+
+% close door 1
+<Generator name="initDoor1">    
+<TransRel>
+1  d1_arcl   4
+1  d1_cl     2          
+2  d1_arcl   3          
+2  dtick     3          
+3  d1_stp    4
+4  dtick     4          
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+
+% close door 2
+<Generator name="initDoor2">    
+<TransRel>
+1  d2_arcl   4
+1  d2_cl     2          
+2  d2_arcl   3          
+2  dtick     3          
+3  d2_stp    4
+4  dtick     4          
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+
+% operate cabin
+<Generator name="cabin">    
+<TransRel>
+% blink 
+1  c_slw      2
+2  l0_upon    3
+3  l2_downon  4
+4  b0_up     10
+4  b2_down   20 
+4  btick      5
+5  l0_upoff   6
+6  l2_downoff 7
+7  b0_up     10
+7  b2_down   20 
+7  btick      2
+% cabin down     
+10 l0_upon    11
+11 l2_downoff 12
+12 c_down     13
+13 btick      13
+13 c_ar2      13
+13 c_lv2      13
+13 c_ar0      15
+13 c_lv0      15
+13 b0_rel     15
+15 c_stp       2
+% cabin up
+20 l0_upoff  21
+21 l2_downon 22
+22 c_up      23
+23 btick     23
+23 c_ar0     23
+23 c_lv0     23
+23 c_ar2     25
+23 c_lv2     25
+23 b2_rel    25
+25 c_stp      2
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+</Generators> 
+ 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 2. Specify event execution semantics
+<EventConfiguration>
+
+%%%%%%%%%  input events
+
+%%% Cabin sensor: arrive at floor 0 
+<Event name="c_ar0"> <Input> <Priority val="100"/> <Triggers> "%IX54.1" +PosEdge+ </Triggers> </Input> </Event>
+  
+%%% Cabin sensor: leave floor 0          
+<Event name="c_lv0"> <Input> <Priority val="100"/> <Triggers> "%IX54.1" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive at floor 1 
+<Event name="c_ar1"> <Input> <Priority val="100"/> <Triggers> "%IX54.2" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: leave floor 1 
+<Event name="c_lv1"> <Input> <Priority val="100"/> <Triggers> "%IX54.2" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive at floor 2          
+<Event name="c_ar2"> <Input> <Priority val="100"/> <Triggers> "%IX54.3" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: leave floor 2 
+<Event name="c_lv2"> <Input> <Priority val="100"/> <Triggers> "%IX54.3" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive slow sensor floor 0 from top         
+<Event name="c_slwtop0"> <Input> <Priority val="100"/> <Triggers> "%IX54.4" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive slow sensor floor 1 from bottom
+<Event name="c_slwbot1"> <Input> <Priority val="100"/> <Triggers> "%IX54.5" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive slow sensor floor 1 from top         
+<Event name="c_slwtop1"> <Input> <Priority val="100"/> <Triggers> "%IX54.6" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Cabin sensor: arrive slow sensor floor 2 from bottom
+<Event name="c_slwbot2"> <Input> <Priority val="100"/> <Triggers> "%IX54.7" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 0 reached closed position
+<Event name="d0_arcl"> <Input> <Priority val="100"/> <Triggers> "%IX56.1" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 0 leaving closed position
+<Event name="d0_lvcl"> <Input> <Priority val="100"/> <Triggers> "%IX56.1" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 0 reached open position
+<Event name="d0_arop"> <Input> <Priority val="100"/> <Triggers> "%IX54.8" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 0 leaving open position
+<Event name="d0_lvop"> <Input> <Priority val="100"/> <Triggers> "%IX54.8" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 1 reached closed position
+<Event name="d1_arcl"> <Input> <Priority val="100"/> <Triggers> "%IX56.3" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 1 leaving closed position
+<Event name="d1_lvcl"> <Input> <Priority val="100"/> <Triggers> "%IX56.3" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 1 reached open position
+<Event name="d1_arop"> <Input> <Priority val="100"/> <Triggers> "%IX56.2" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 1 leaving open position
+<Event name="d1_lvop"> <Input> <Priority val="100"/> <Triggers> "%IX56.2" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 2 reached closed position
+<Event name="d2_arcl"> <Input> <Priority val="100"/> <Triggers> "%IX56.5" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 2 leaving closed position
+<Event name="d2_lvcl"> <Input> <Priority val="100"/> <Triggers> "%IX56.5" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 2 reached open position
+<Event name="d2_arop"> <Input> <Priority val="100"/> <Triggers> "%IX56.4" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: door floor 2 leaving open position
+<Event name="d2_lvop"> <Input> <Priority val="100"/> <Triggers> "%IX56.4" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 0 occupied
+<Event name="d0_bl"> <Input> <Priority val="100"/> <Triggers> "%IX56.6" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 0 released
+<Event name="d0_rl"> <Input> <Priority val="100"/> <Triggers> "%IX56.6" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 1 occupied
+<Event name="d1_bl"> <Input> <Priority val="100"/> <Triggers> "%IX56.7" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 1 released
+<Event name="d1_rl"> <Input> <Priority val="100"/> <Triggers> "%IX56.7" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 2 occupied
+<Event name="d2_bl"> <Input> <Priority val="100"/> <Triggers> "%IX56.8" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Door sensor: light barrier floor 2 released
+<Event name="d2_rl"> <Input> <Priority val="100"/> <Triggers> "%IX56.8" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button up at floor 0 pressed
+<Event name="b0_up"> <Input> <Priority val="100"/> <Triggers> "%IX58.1" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button up at floor 0 released
+<Event name="b0_rel"> <Input> <Priority val="100"/> <Triggers> "%IX58.1" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button down at floor 1 pressed
+<Event name="b1_down"> <Input> <Priority val="100"/> <Triggers> "%IX58.2" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button up at floor 1 pressed
+<Event name="b1_up"> <Input> <Priority val="100"/> <Triggers> "%IX58.3" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button down at floor 2 pressed
+<Event name="b2_down"> <Input> <Priority val="100"/> <Triggers> "%IX58.4" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: call button down at floor 2 released
+<Event name="b2_rel"> <Input> <Priority val="100"/> <Triggers> "%IX58.4" +NegEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: dest button floor 0 pressed
+<Event name="bc_0"> <Input> <Priority val="100"/> <Triggers> "%IX58.5" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: dest button floor 1 pressed
+<Event name="bc_1"> <Input> <Priority val="100"/> <Triggers> "%IX58.6" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: dest button floor 2 pressed
+<Event name="bc_1"> <Input> <Priority val="100"/> <Triggers> "%IX58.7" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: allert button pressed
+<Event name="bc_all"> <Input> <Priority val="100"/> <Triggers> "%IX58.8" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: emergency stop button pressed
+<Event name="bc_estp"> <Input> <Priority val="100"/> <Triggers> "%IX60.1" +PosEdge+ </Triggers> </Input> </Event>
+
+%%% Opertor sensor: simulation overload button pressed
+<Event name="bc_sim"> <Input> <Priority val="100"/> <Triggers> "%IX60.2" +PosEdge+ </Triggers> </Input> </Event>
+
+
+%%%%%%%%%  output events
+
+%%% Cabin actuator: start motor upwards 
+<Event name="c_up"> <Output> <Priority val="100"/> <Actions> "%QX55.2" +Clr+ "%QX55.1" +Set+ </Actions> </Output> </Event>
+
+%%% Cabin actuator: start motor downwards 
+<Event name="c_down"> <Output> <Priority val="100"/> <Actions> "%QX55.1" +Clr+ "%QX55.2" +Set+ </Actions> </Output> </Event>
+
+%%% Cabin actuator: stop motor 
+<Event name="c_stp"> <Output> <Priority val="100"/> <Actions> "%QX55.1" +Clr+ "%QX55.2" +Clr+ </Actions> </Output> </Event>
+
+%%% Cabin actuator: activate slow motor  
+<Event name="c_slw"> <Output> <Priority val="100"/> <Actions> "%QX55.3" +Set+ </Actions> </Output> </Event>
+
+%%% Cabin actuator: deactivate slow motor  
+<Event name="c_fst"> <Output> <Priority val="100"/> <Actions> "%QX55.3" +Clr+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 0 to open door
+<Event name="d0_op"> <Output> <Priority val="100"/> <Actions> "%QX55.5" +Clr+ "%QX55.4" +Set+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 0 to close door
+<Event name="d0_cl"> <Output> <Priority val="100"/> <Actions> "%QX55.4" +Clr+ "%QX55.5" +Set+ </Actions> </Output> </Event>
+
+%%% Door actuator: stop motor floor 0 
+<Event name="d0_stp"> <Output> <Priority val="100"/> <Actions> "%QX55.4" +Clr+ "%QX55.5" +Clr+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 1 to open door
+<Event name="d1_op"> <Output> <Priority val="100"/> <Actions> "%QX55.7" +Clr+ "%QX55.6" +Set+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 1 to close door
+<Event name="d1_cl"> <Output> <Priority val="100"/> <Actions> "%QX55.6" +Clr+ "%QX55.7" +Set+ </Actions> </Output> </Event>
+
+%%% Door actuator: stop motor floor 1 
+<Event name="d1_stp"> <Output> <Priority val="100"/> <Actions> "%QX55.6" +Clr+ "%QX55.7" +Clr+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 2 to open door
+<Event name="d2_op"> <Output> <Priority val="100"/> <Actions> "%QX57.1" +Clr+ "%QX55.8" +Set+ </Actions> </Output> </Event>
+
+%%% Door actuator: start motor floor 2 to close door
+<Event name="d2_cl"> <Output> <Priority val="100"/> <Actions> "%QX55.8" +Clr+ "%QX57.1" +Set+ </Actions> </Output> </Event>
+
+%%% Door actuator: stop motor floor 2 
+<Event name="d2_stp"> <Output> <Priority val="100"/> <Actions> "%QX57.1" +Clr+ "%QX55.8" +Clr+ </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate call button upstairs floor 0
+<Event name="l0_upon"> <Output> <Priority val="100"/> <Actions> "%QX57.2" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for call button upstairs floor 0
+<Event name="l0_upoff"> <Output> <Priority val="100"/> <Actions> "%QX57.2" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate call button downstairs floor 1
+<Event name="l1_downon"> <Output> <Priority val="100"/> <Actions> "%QX57.3" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for call button downstairs floor 1
+<Event name="l1_downoff"> <Output> <Priority val="100"/> <Actions> "%QX57.3" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate call button upstairs floor 1
+<Event name="l1_upon"> <Output> <Priority val="100"/> <Actions> "%QX57.4" +Set+ </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for call button upstairs floor 1
+<Event name="l1_upoff"> <Output> <Priority val="100"/> <Actions> "%QX57.4" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate call button downstairs floor 2
+<Event name="l2_downon"> <Output> <Priority val="100"/> <Actions> "%QX57.5" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for call button downstairs floor 2
+<Event name="l2_downoff"> <Output> <Priority val="100"/> <Actions> "%QX57.5" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate indicator display floor 0
+<Event name="ls0_on"> <Output> <Priority val="100"/> <Actions> "%QX57.6" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for indicator display floor 0
+<Event name="ls0_off"> <Output> <Priority val="100"/> <Actions> "%QX57.6" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate indicator display floor 1
+<Event name="ls1_on"> <Output> <Priority val="100"/> <Actions> "%QX57.7" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for indicator display floor 1
+<Event name="ls1_off"> <Output> <Priority val="100"/> <Actions> "%QX57.7" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate indicator display floor 2
+<Event name="ls2_on"> <Output> <Priority val="100"/> <Actions> "%QX57.8" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for indicator display floor 2
+<Event name="ls2_off"> <Output> <Priority val="100"/> <Actions> "%QX57.8" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate drive direction display upwards
+<Event name="ld_upon"> <Output> <Priority val="100"/> <Actions> "%QX59.2" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for drive direction display upwards
+<Event name="ld_upoff"> <Output> <Priority val="100"/> <Actions> "%QX59.2" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate drive direction display downwards
+<Event name="ld_downon"> <Output> <Priority val="100"/> <Actions> "%QX59.1" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for drive direction display downwards
+<Event name="ld_downoff"> <Output> <Priority val="100"/> <Actions> "%QX59.1" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate dest button floor 0
+<Event name="lc0_on"> <Output> <Priority val="100"/> <Actions> "%QX59.3" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for dest button floor 0
+<Event name="lc0_off"> <Output> <Priority val="100"/> <Actions> "%QX59.3" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate dest button floor 1
+<Event name="lc1_on"> <Output> <Priority val="100"/> <Actions> "%QX59.4" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for dest button floor 1
+<Event name="lc1_off"> <Output> <Priority val="100"/> <Actions> "%QX59.4" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate dest button floor 2
+<Event name="lc2_on"> <Output> <Priority val="100"/> <Actions> "%QX59.5" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for dest button floor 2
+<Event name="lc2_off"> <Output> <Priority val="100"/> <Actions> "%QX59.5" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate allert button
+<Event name="lc_allon"> <Output> <Priority val="100"/> <Actions> "%QX59.6" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for allert button
+<Event name="lc_alloff"> <Output> <Priority val="100"/> <Actions> "%QX59.6" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate emergency stop button
+<Event name="lc_estpon"> <Output> <Priority val="100"/> <Actions> "%QX59.7" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for emergency stop button
+<Event name="lc_estpoff"> <Output> <Priority val="100"/> <Actions> "%QX59.7" +Clr+  </Actions> </Output> </Event>
+
+%%% Operator actuator: illuminate simulation overload button
+<Event name="lc_simon"> <Output> <Priority val="100"/> <Actions> "%QX59.8" +Set+  </Actions> </Output> </Event>
+
+%%% Operator actuator: turn off light for simulation overload button
+<Event name="lc_simoff"> <Output> <Priority val="100"/> <Actions> "%QX59.8" +Clr+  </Actions> </Output> </Event>
+
+
+%%%%%%%%%  internal events
+
+<Event name="vc_up12"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vc_up01"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vc_dw21"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vc_dw10"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vc_0stp"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vc_1stp"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vc_2stp"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vd0_arcl"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vd0_arop"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vd1_arcl"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vd1_arop"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vd2_arcl"> <Internal> <Priority val="100"/> </Internal> </Event>
+<Event name="vd2_arop"> <Internal> <Priority val="100"/> </Internal> </Event>
+
+% timer event: door delay
+<Event name="dtick"> 
+<Internal> 
+<Priority val="100"/> 
+<Timer val="TIME#500ms">  
+<ResetEvents> d0_cl d1_cl d2_cl </ResetEvents>
+<StartEvents> d0_cl d1_cl d2_cl </StartEvents>
+<StopEvents/>
+</Timer>
+</Internal> 
+</Event>
+
+% timer event: blink delay
+<Event name="btick"> 
+<Internal> 
+<Priority val="100"/> 
+<Timer val="TIME#1s">  
+<ResetEvents> l0_upon l0_upoff l2_downon l2_downoff </ResetEvents>
+<StartEvents> l0_upon l0_upoff l2_downon l2_downoff </StartEvents>
+<StopEvents/>
+</Timer>
+</Internal> 
+</Event>
+
+
+
+</EventConfiguration>
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 3. Target configuration parameters
+
+<TargetConfiguration>
+
+% Sensible code options for IEC 61131-3 ST
+<Prefix val="fcg"/>
+<WordType val="WORD"/>
+<WordSize val="16" />
+<IntegerType val="INT"/>
+<IntegerSize val="16"/>
+<ArrayForBitarray val="true"/>
+<BisectionForBitArray val="true"/>
+<ArrayForBitmasks val="false"/>
+<BitAddressArithmetic val="true"/>
+<ArrayForTransitions  val="true"/>
+<LoopPendingInputs val="true"/>
+
+% IEC 61131-3 ST specific code options
+<IecDeclarePhysical val="VAR"/>
+<IecTypedArrayConstants val="true"/>
+
+
+% IEC 61131-3 ST specific code organisation
+<IncludeProgram>
+<![CDATA[
+(* instantiate and invoke cyclic function *)
+VAR
+  FCG_cyclic : fcg_cyclic_fb;
+END_VAR
+FCG_cyclic();
+]]>
+</IncludeProgram>
+
+% IEC 61131-3 ST specific code organisation
+% - declartion of variables used in Exec-actions or Value-inputs
+% - emulation of system time to set "fcg_time_elapsed"
+<IncludeCyclic>
+<![CDATA[
+(* iec timer to simulate system time *)
+VAR
+  FCG_ton : TON;
+  FCG_time_init : BOOL := true;
+  FCG_time_recent : TIME := TIME#0ms;
+  FCG_time_now : TIME;
+END_VAR
+
+IF FCG_time_init THEN
+  FCG_ton(IN:=false);
+  FCG_time_init := false;
+END_IF;
+FCG_ton(IN:=true, PT:=TIME#2h, ET=>FCG_time_now); 
+fcg_time_elapsed := SUB_TIME(FCG_time_now,FCG_time_recent);
+IF FCG_time_now < TIME#1h THEN
+  FCG_time_recent := FCG_time_now;
+ELSE
+  FCG_ton(IN:=false, PT:=TIME#2h);
+  FCG_ton(IN:=true, PT:=TIME#2h); 
+  FCG_time_recent := TIME#0ms;  
+END_IF;
+
+]]>
+</IncludeCyclic>
+
+
+% Additional code
+<IncludeBefore>
+<![CDATA[]]>
+</IncludeBefore>
+<IncludeAfter>
+<![CDATA[]]>
+</IncludeAfter>
+
+</TargetConfiguration>
+
+</CodeGenerator>
+
+
+

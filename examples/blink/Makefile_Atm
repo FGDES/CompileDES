@@ -1,0 +1,57 @@
+# ATmega Makefile, Thomas Moor 2016
+
+# Target ATmega328p with Arduino bootloader (ch340 Arduino-Nano clone)
+
+# configure programmer
+AVRDUDE_PORT   = -P /dev/ttyUSB0 -b 57600 
+#AVRDUDE_PORT   = -P "/dev/tty.wch ch341 USB=>RS232 fa130" -b 57600 
+
+# configure compiler
+CC             = avr-gcc
+MCU_TARGET     = atmega328p
+LIBS           =
+CFLAGS         = -g -Os -Wall $(OPTIMIZE) -fwhole-program -fdata-sections -ffunction-sections -mmcu=$(MCU_TARGET) 
+
+# configure linker/loader
+LDFLAGS       = -Wl,-gc-sections
+
+# configure tools
+OBJCOPY        = avr-objcopy
+OBJDUMP        = avr-objdump
+CDES           = ../../build/compiledes
+
+# default target
+all: blink_atm.hex 
+
+# generate code
+%.c: %.cgc $(CDES)
+	$(CDES) -t atm -o $@ $< 
+
+# compile
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $< 
+
+# link
+%.elf: %.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS)
+
+# list 
+%.lss: %.elf
+	$(OBJDUMP) -h -S $< > $@
+
+# rom image 
+%.hex: %.elf %.lss
+	$(OBJCOPY) -j .text -j .data -O ihex $< $@
+
+
+# program with arduino bootloader
+%.load: %.hex
+	avrdude -c arduino -p m328p $(AVRDUDE_PORT) -U flash:w:$<
+
+# clean
+clean:
+	rm -rf *.o *.elf *.map *.lss *.hex
+
+
+
+

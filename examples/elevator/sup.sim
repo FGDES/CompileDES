@@ -1,0 +1,332 @@
+% Configuration-file for the interactive simulation of the elevator supervisor.
+%
+% Besides the automata to simulate, this file specifies event attributes 
+% such as execution priority. We use a negativ priority to indicate an
+% an uncontrollable event. Thus, sensors must be triggered manually in the
+% simulation.
+
+<Executor>
+% Specify generators
+<Generators>
+
+% Kabine, Bedienelemente, Tueren, Lichtschranken
+"supervisors/Sup_KBE_TLS.gen"
+% Kabine, Bedienelemente --> Notwendig, da Sup_KBE_TLS.gen mit Hilfe von Abstraktion von Sup_KBE.gen berechnet wird!
+"supervisors/Sup_KBE.gen"
+% Türen und Lichtschranken
+"supervisors/Sup_TLS0.gen"
+"supervisors/Sup_TLS1.gen"
+"supervisors/Sup_TLS2.gen"
+"supervisors/Sup_Tuer0.gen"
+"supervisors/Sup_Tuer1.gen"
+"supervisors/Sup_Tuer2.gen"
+% Schnell- Langsamfahrt
+"supervisors/Sup_SL.gen"
+% Anzeigeelemente
+"supervisors/Sup_estp.gen"			% Notstop
+"supervisors/Sup_AE_ld.gen"			% Fahrtrichtung
+"supervisors/Sup_AE_Stockwerk_Kabine.gen"		% Stockwerksanzeige Innen und Aussen
+"supervisors/Sup_AE_Stockwerk_Anzeige.gen"		% Stockwerksanzeige Innen und Aussen
+"supervisors/Sup_AE_Aussen_l0.gen"			% Anzeige für Anforderung der Kabine Aussen
+"supervisors/Sup_AE_Aussen_l1.gen"			% Anzeige für Anforderung der Kabine Aussen
+"supervisors/Sup_AE_Aussen_l2.gen"			% Anzeige für Anforderung der Kabine Aussen
+ 
+</Generators>
+
+% Specify trace conditions
+<Conditions>
+</Conditions>
+
+
+
+% Specify event attributes
+% (here: execution priority only)
+<SimEventAttributes>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%
+% Virtuelle Ereignisse von TLS
+%
+
+
+"vd0_arop"       
+<Stochastic> +Trigger+ +Uniform+  <Parameter> 200 201  </Parameter> </Stochastic>
+
+
+
+"vd1_arop"       
+<Stochastic> +Trigger+ +Uniform+  <Parameter> 200 201 </Parameter> </Stochastic>
+
+
+"vd2_arop"       
+<Stochastic> +Trigger+ +Uniform+  <Parameter> 200 201 </Parameter> </Stochastic>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%
+% Sensor events 
+%
+
+"c_ar0"     
+<Priority> -1  </Priority>
+
+"c_lv0"      
+<Priority> -1  </Priority>
+
+"c_ar1"       
+<Priority> -1  </Priority>
+
+"c_lv1"       
+<Priority> -1  </Priority>
+
+"c_ar2"       
+<Priority> -1  </Priority>
+
+"c_lv2"       
+<Priority> -1  </Priority>
+
+"c_slwtop0"       
+<Priority> -1  </Priority>
+
+"c_slwbot1"       
+<Priority> -1  </Priority>
+
+"c_slwtop1"       
+<Priority> -1  </Priority>
+
+"c_slwbot2"       
+<Priority> -1  </Priority>
+
+"b1_down"
+<Priority> -1  </Priority>
+
+"b1_up"
+<Priority> -1  </Priority>
+
+"b2_down"
+<Priority> -1  </Priority>
+
+"b0_up"
+<Priority> -1  </Priority>
+
+"d0_bl"
+<Priority> -1  </Priority>
+
+"d0_rl"
+<Priority> -1  </Priority>
+
+"d0_arop"
+<Priority> -1  </Priority>
+
+"d0_arcl"
+<Priority> -1  </Priority>
+
+"d0_lvop"
+<Priority> -1  </Priority>
+
+"d0_lvcl"
+<Priority> -1  </Priority>
+
+"d1_bl"
+<Priority> -1  </Priority>
+
+"d1_rl"
+<Priority> -1  </Priority>
+
+"d1_arop"
+<Priority> -1  </Priority>
+
+"d1_arcl"
+<Priority> -1  </Priority>
+
+"d1_lvop"
+<Priority> -1  </Priority>
+
+"d1_lvcl"
+<Priority> -1  </Priority>
+
+"d2_bl"
+<Priority> -1  </Priority>
+
+"d2_rl"
+<Priority> -1  </Priority>
+
+"d2_arop"
+<Priority> -1  </Priority>
+
+"d2_arcl"
+<Priority> -1  </Priority>
+
+"d2_lvop"
+<Priority> -1  </Priority>
+
+"d2_lvcl"
+<Priority> -1  </Priority>
+
+"bc_0"
+<Priority> -1  </Priority>
+
+"bc_1"
+<Priority> -1  </Priority>
+
+"bc_2"
+<Priority> -1  </Priority>
+
+"bc_all"
+<Priority> -1  </Priority>
+
+"bc_estp"
+<Priority> -1  </Priority>
+
+"bc_sim"
+<Priority> -1  </Priority>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%
+% Actuator events
+%
+
+"c_stp"       
+<Priority> 1  </Priority>
+
+"c_up"       
+<Priority> 1  </Priority>
+
+"c_down"       
+<Priority> 1  </Priority>
+
+"c_slw"
+<Priority> 1  </Priority>
+
+"c_fst"
+<Priority> 1  </Priority>
+
+"d0_stp"
+<Priority> 1  </Priority>
+
+"d0_op"
+<Priority> 1  </Priority>
+
+"d0_cl"
+<Priority> 1  </Priority>
+
+"u_d0close"
+
+
+"d1_stp"
+<Priority> 1  </Priority>
+
+"d1_op"
+<Priority> 1  </Priority>
+
+"d1_cl"
+<Priority> 1  </Priority>
+
+"u_d1close"
+
+
+"d2_stp"
+<Priority> 1  </Priority>
+
+"d2_op"
+<Priority> 1  </Priority>
+
+"d2_cl"
+<Priority> 1  </Priority>
+
+"u_d2close"
+
+
+"l0_upon"
+<Priority> 1  </Priority>
+
+"l0_upoff"
+<Priority> 1  </Priority>
+
+"l1_downon"
+<Priority> 1  </Priority>
+
+"l1_downoff"
+<Priority> 1  </Priority>
+
+"l2_downon"
+<Priority> 1  </Priority>
+
+"l2_downoff"
+<Priority> 1  </Priority>
+
+"l1_upon"
+<Priority> 1  </Priority>
+
+"l1_upoff"
+<Priority> 1  </Priority>
+
+"ls0_on"
+<Priority> 1  </Priority>
+
+"ls0_off"
+<Priority> 1  </Priority>
+
+"ls1_on"
+<Priority> 1  </Priority>
+
+"ls1_off"
+<Priority> 1  </Priority>
+
+"ls2_on"
+<Priority> 1  </Priority>
+
+"ls2_off"
+<Priority> 1  </Priority>
+
+"ld_upon"
+<Priority> 1  </Priority>
+
+"ld_upoff"
+<Priority> 1  </Priority>
+
+"ld_downon"
+<Priority> 1  </Priority>
+
+"ld_downoff"
+<Priority> 1  </Priority>
+
+"lc_0on"
+<Priority> 1  </Priority>
+
+"lc_0off"
+<Priority> 1  </Priority>
+
+"lc_1on"
+<Priority> 1  </Priority>
+
+"lc_1off"
+<Priority> 1  </Priority>
+
+"lc_2on"
+<Priority> 1  </Priority>
+
+"lc_2off"
+<Priority> 1  </Priority>
+
+"lc_allon"
+<Priority> 1  </Priority>
+
+"lc_alloff"
+<Priority> 1  </Priority>
+
+"lc_estpon"
+<Priority> 1  </Priority>
+
+"lc_estpoff"
+<Priority> 1  </Priority>
+
+"lc_simon"
+<Priority> 1  </Priority>
+
+"lc_simoff"
+<Priority> 1  </Priority>
+
+%% end
+</SimEventAttributes>
+</Executor>
+ 

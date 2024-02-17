@@ -1,0 +1,36 @@
+<Generator>
+SupConNB((Generator),(Generator||Pr...lddw1)||PrefixClosure(Spez_lddw2))) 
+
+% 
+%  Statistics for SupConNB((Generator),(Generator||Pr...lddw1)||PrefixClosure(Spez_lddw2)))
+% 
+%  States:        1
+%  Init/Marked:   1/1
+%  Events:        13
+%  Transitions:   0
+%  StateSymbols:  0
+%  Attrib. E/S/T: 3/0/0
+% 
+
+<Alphabet>
+c_stp         +C+           ld_downoff    c_up          +C+           c_down       
++C+           ld_downon     ld_upoff      ld_upon       c_ar1         c_ar0        
+c_ar2         c_lv0         c_lv1         c_lv2        
+</Alphabet>
+
+<States>
+1             
+</States>
+
+<TransRel/>
+
+<InitStates>
+1             
+</InitStates>
+
+<MarkedStates>
+1             
+</MarkedStates>
+
+
+</Generator>

@@ -1,0 +1,128 @@
+#
+# GNU-Make Makefile for libFAUDES application CompileDES for Mac OsX and Linux
+#
+
+# 
+# Part 1: configure paths and tools
+#
+
+# set version information (optional)
+COMPILEDES_VERSION = 3.13
+DEFINES+= -DCOMPILEDES_VERSION=\"$(COMPILEDES_VERSION)\"
+
+# libfaudes compiled library and headers 
+LIBFAUDES=./libfaudes_linux
+
+# compiler 
+CXX= g++
+INCLUDES=-I$(LIBFAUDES)/include
+CFLAGS= $(INCLUDES) -Wall -c
+
+# linker
+LXX= g++
+LFLAGS= -L$(LIBFAUDES) 
+LIBS= $(LIBFAUDES)/libfaudes.a -lpthread
+
+# doxygen (only needed for the target doc, see below)
+DOXYGEN = doxygen
+
+# pragmatic adaption for Mac OSX
+ifneq ($(findstring Darwin,$(shell uname -s)),)
+LIBFAUDES=./libfaudes_osx
+endif
+
+# pragmatic adaption for Linux/LSB
+ifeq ($(FAUDES_PLATFORM),lsb_linux)
+CXX = /opt/lsb/bin/lsbc++ --lsb-target-version=4.1 --lsb-besteffort
+CC = /opt/lsb/bin/lsbcc   --lsb-target-version=4.1 --lsb-besteffort
+LXX = /opt/lsb/bin/lsbc++ --lsb-target-version=4.1 --lsb-besteffort
+CFLAGS += -fPIC -fstrict-aliasing -fmessage-length=0 -O3 -fno-stack-protector -std=gnu++98
+CFLAGS += -Wall
+LFLAGS += -Wl,--as-needed
+LIBFAUDES=./libfaudes_lsb
+endif
+
+
+# 
+# Part 2: CompileDES sources and targets
+#
+
+# source files
+CPPSRC= cgp_eventconfig.cpp cgp_codegenerator.cpp cgp_codeprimitives.cpp \
+        cgp_embeddedc.cpp  cgp_atmega.cpp cgp_kinetis.cpp \
+        cgp_iec61131st.cpp cgp_gebtools.cpp cgp_plcoxml.cpp
+
+# executable source file
+EXESRC=compiledes.cpp
+
+# std dirs
+SRCDIR=src
+BLDDIR=build
+OBJDIR=build/obj
+BINDIR=build
+
+# adjust files to std dirs
+HEADERS = $(CPPSRC:%.cpp=$(SRCDIR)/%.h) 
+OBJECTS = $(CPPSRC:%.cpp=$(OBJDIR)/%.o) 
+EXECUTABLES := $(EXESRC:%.cpp=$(BINDIR)/%)
+
+# first target becomes the default
+default: $(EXECUTABLES) $(EXESRC:%.cpp=$(OBJDIR)/%.o) $(OBJECTS)
+
+
+
+# 
+# Part 3: build rules
+#
+
+# prepare build dirs
+PREPARE = $(OBJDIR)/.timestemp
+$(PREPARE):
+	@ - mkdir -p $(OBJDIR)
+	@ touch $@
+	@echo "installed build directories"
+
+# .cpp -> .o
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS) $(PREPARE)
+	$(CXX) $(CFLAGS) $(DEFINES) $< -o $@
+
+# .o -> bin
+$(BINDIR)/%: $(OBJDIR)/%.o $(OBJECTS) $(PREPARE)
+	$(LXX) $(LFLAGS) $(DEFINES) $< $(OBJECTS) $(LIBS) -o $@
+
+# clean
+clean:
+	rm -f $(OBJECTS)  $(EXESRC:%.cpp=$(OBJDIR)/%.o)
+
+# dist-clean
+dist-clean: clean
+	@ - rm $(BLDDIR)/*
+	@ - rm $(OBJDIR)/*
+	@echo "removed all generated files"
+
+
+
+# 
+# Part 4: documentation
+#
+
+# Note: since I could not restrain to personalise the footer/header/css to my
+# preferences, the doc target requires a doxygen version close to mine, i.e., 
+# 1.8 series. For other versions, a plain "doxygen" manually invoked within 
+# "compiledes/src/" should produce reasonable output in "./compile/src/doc/html".
+# Check the doxygen manuals, its worth it.
+
+# run doxygen
+doc:
+	@echo running doxygen
+	@ ( cat src/doxygen.conf ; \
+              echo "PROJECT_NUMBER = \"$(COMPILEDES_VERSION)\"" ; \
+        ) | $(DOXYGEN) - 
+
+
+# explicit targets
+.PHONY: doc
+
+
+
+

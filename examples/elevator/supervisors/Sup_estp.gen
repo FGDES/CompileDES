@@ -1,0 +1,41 @@
+<Generator>
+SupConNB((Mod_all),(Mod_all||PrefixClosure(Spez_estp))) 
+
+% 
+%  Statistics for SupConNB((Mod_all),(Mod_all||PrefixClosure(Spez_estp)))
+% 
+%  States:        4
+%  Init/Marked:   1/2
+%  Events:        3
+%  Transitions:   6
+%  StateSymbols:  0
+%  Attrib. E/S/T: 0/0/0
+% 
+
+<Alphabet>
+bc_estp       lc_estpon     lc_estpoff   
+</Alphabet>
+
+<States>
+1              2              3              4             
+</States>
+
+<TransRel>
+1              bc_estp       2             
+2              bc_estp       2             
+2              lc_estpon     3             
+3              bc_estp       4             
+4              bc_estp       4             
+4              lc_estpoff    1             
+</TransRel>
+
+<InitStates>
+1             
+</InitStates>
+
+<MarkedStates>
+1              2             
+</MarkedStates>
+
+
+</Generator>

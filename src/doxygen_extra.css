@@ -1,0 +1,80 @@
+/* body padding */
+
+body {
+  margin: 0px;
+  padding: 0px;
+}
+
+/* dislike small tt font */
+tt {
+    font-size: 125%;
+} 
+
+/* 1200px centered layout with divs */
+div#cdes {
+  max-width: 1200px; 
+  margin-left:auto;
+  margin-right:auto;
+  padding: 0;
+  /* background: #F9F1FC; */
+}
+
+/* fgdes link: refs visible */
+#titlearea table {
+  width: 100%;
+}
+
+/* fgdes link: erefs visible */
+#titlearea a:visited {
+  color: #FBFCFD;
+}
+
+/* fgdes link: expand title */
+#titlearea a {
+  color: #FBFCFD;
+}
+
+/* fgdes link, line 1 */
+#fgdeslink {
+    font: 300% Tahoma, Arial,sans-serif;
+    margin: 0px;
+    text-align: right;
+    padding: 2px 0px;
+}
+
+/* fgdes link, line 2 */
+#fgdesbrief {
+    font: 120% Tahoma, Arial,sans-serif;
+    margin: 0px;
+    padding: 2px 0px;
+    text-align: right;
+}
+
+/* adapt doxygen layout */
+#side-nav {
+  left: auto;
+  /* background: #F9F1FC; */
+}
+#nav-tree {
+  /* background: #F9F1FC; */
+}
+#top {
+  /* position: absolute; */
+  /* width: 100%; */
+  /* left: 0px; */
+  /* background: #F9F1FC; */
+  background-image: url("tab_a.png");
+  background-size: auto 100%;
+  background-repeat: repeat-x;
+  color: #FBFCFD;
+  text-shadow: 0px 1px 1px #00;
+}
+pre.fragment {
+  font-size: 100%;
+}
+#nav-sync {
+  visibility: hidden;
+}
+#doc-content div.summary {
+  margin-left: -500px;
+}

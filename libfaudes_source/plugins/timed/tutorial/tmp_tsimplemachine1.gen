@@ -1,0 +1,38 @@
+<Generator name="contr simple machine">
+
+% 
+%  Statistics for contr simple machine
+% 
+%  States:        3
+%  Init/Marked:   1/1
+%  Events:        4
+%  Transitions:   4
+%  StateSymbols:  3
+%  Attrib. E/S/T: 2/0/0
+% 
+
+<Alphabet>
+alpha         +Ca+          beta          mue           lambda        +Ca+         
+</Alphabet>
+
+<States>
+idle          busy          down         
+</States>
+
+<TransRel>
+idle          alpha         busy         
+busy          beta          idle         
+busy          mue           down         
+down          lambda        idle         
+</TransRel>
+
+<InitStates>
+idle         
+</InitStates>
+
+<MarkedStates>
+idle         
+</MarkedStates>
+
+
+</Generator>

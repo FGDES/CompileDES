@@ -1,0 +1,69 @@
+<Generator>
+"SupConNB((Project(Lichtschranke_Mod...refixClosure(Spez_TLS) [minstate]))" 
+
+% 
+%  Statistics for SupConNB((Project(Lichtschranke_Mod...refixClosure(Spez_TLS) [minstate]))
+% 
+%  States:        16
+%  Init/Marked:   1/6
+%  Events:        9
+%  Transitions:   31
+%  StateSymbols:  0
+%  Attrib. E/S/T: 3/0/0
+% 
+
+<Alphabet>
+d1_op         +C+           vd1_arcl      d1_bl         d1_rl         d1_arcl      
+d1_arop       d1_stp        +C+           d1_cl         +C+           vd1_arop     
+</Alphabet>
+
+<States>
+<Consecutive>
+1              16            
+</Consecutive>
+</States>
+
+<TransRel>
+1              d1_op         2             
+1              d1_bl         3             
+2              d1_bl         4             
+2              d1_arop       7             
+3              d1_op         4             
+3              d1_rl         5             
+4              d1_rl         2             
+4              d1_arop       6             
+5              vd1_arcl      1             
+5              d1_bl         3             
+6              d1_rl         7             
+6              d1_stp        8             
+7              d1_bl         6             
+7              d1_stp        9             
+8              d1_rl         9             
+9              d1_bl         8             
+9              vd1_arop      10            
+10             d1_bl         8             
+10             d1_cl         11            
+11             d1_bl         12            
+11             d1_arcl       13            
+12             d1_rl         11            
+12             d1_stp        15            
+13             d1_bl         14            
+13             d1_stp        5             
+14             d1_rl         13            
+14             d1_stp        3             
+15             d1_op         4             
+15             d1_rl         16            
+16             d1_op         2             
+16             d1_bl         15            
+</TransRel>
+
+<InitStates>
+1             
+</InitStates>
+
+<MarkedStates>
+1              3              5              8              9              10            
+</MarkedStates>
+
+
+</Generator>

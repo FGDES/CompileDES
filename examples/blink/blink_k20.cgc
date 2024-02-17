@@ -1,0 +1,449 @@
+% Example Configuration of Code Generator
+
+% This example configures the code generator to compile
+% a variation of the u-controller hello-world example "blink".
+% It has been validated to compile with "arm-none-eabi-gcc", 
+% version 4.8.4, from the Arduino/Teensy toolchain. Additional 
+% support files "mk20dx256.c/h/ld" required for Teensy 3.2 board 
+% setup and linking.
+
+
+<CodeGenerator name="Blink_K20_2017_03">
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 1. Specify generators
+
+% The Generators section lists relevant generators to compile.
+% You may use either file names with paths relative to this
+% configuration file or explicit Generator sections.
+<Generators>
+
+<Generator name="Blink3">
+<States> Idle sA sAB sABC 10 dAB dA </States>
+<TransRel>
+Idle    OnLedA  sA
+sA      OnLedB  sAB
+sAB     OnLedC  sABC
+sABC    Beep    10
+10      OffLedA dAB
+dAB     OffLedB dA
+dA      OffLedC Idle
+</TransRel>
+<InitStates> Idle </InitStates>
+</Generator>
+
+<Generator name="Delay">
+<TransRel>
+1 OnLedA  2
+1 OnLedB  2
+1 OnLedC  2
+1 OffLedA 2
+1 OffLedB 2
+1 OffLedC 2
+2  Tick    1
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+<Generator name="WaitButton">
+<TransRel>
+1 PushButton  3
+1 OffLedC     1
+3 PushButton  3
+3 OffLedC     1
+3 OnLedA      3
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+</Generators>
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 2. Specify event execution semantics
+
+<EventConfiguration>
+
+%
+% Output events to turn on/off LEDs
+%
+% We have three LEDs connected to PORTB0, PORTD1 and PORTC0,
+% aka Pin 14, 15, 16 on a Teensey 3.2 board.
+%
+% For the K20 target, Set/Clr-actions directly refer to
+% digital IO pins. Here the address must be in the format
+% PORTxn where x is a letter ranging from 'A' to 'E' and n is a
+% bit address ranging from '0' to '31'. Exe-actions are the 
+% same as with EmbeddedC and take any literal expression including 
+% assignments and functioncalls.
+%
+%
+
+<Event name="OnLedA">
+<Output>
+<Priority val="20"/>
+<Actions> PORTB0 +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OnLedB">
+<Output>
+<Priority val="20"/>
+<Actions> PORTD1 +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OnLedC">
+<Output>
+<Priority val="20"/>
+<Actions> PORTC0 +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedA">
+<Output>
+<Priority val="20"/>
+<Actions> PORTB0 +Clr+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedB">
+<Output>
+<Priority val="20"/>
+<Actions> PORTD1 +Clr+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedC">
+<Output>
+<Priority val="20"/>
+<Actions> PORTC0 +Clr+ </Actions>
+</Output>
+</Event>
+
+<Event name="Beep">
+<Output>
+<Priority val="20"/>
+<Actions> "beep(100)" +Execute+ </Actions>
+</Output>
+</Event>
+
+
+%
+% Input event to sense a keyswitch
+
+% We use PORTC7 aka Pin 11 on Teensy board and sense negative edges.
+%
+% For the K20 target, the abstract address provided for
+% an edge trigger must either be a boolean expression or
+% literaly represent a port bit in the notation PORTxn with x 
+% indicating a port 'A' - 'E' and the n specifying the bit on 
+% that port. Value-triggers behave as with the EmbeddedC target 
+% and specify an expression that evaluates to a boolean value.
+%
+<Event name="PushButton">
+<Input>    
+<Priority val="10"/>
+<Triggers> PORTC7 +NegEdge+ +Static+ </Triggers>
+</Input>
+</Event>
+
+
+%
+% Internal timer event Tick
+%
+% Generated timer code is implemented as integer typed 
+% counters with one increment interpreted as one faudes-time
+% unit [ftu]. Target specific code is meant to relate ftu 
+% to some physical time unit by calling the generated
+% function "timerdec(int elapsed_ftu)" on a regular basis.
+% For the K20 target, the below sample code uses a 32bit
+% timer running at bus-clock to sense the elapsed time
+% once per cycle. In this particular configuration, one 
+% ftu amounts to 10ms. 
+% 
+
+<Event name="Tick">
+<Internal>    
+<Priority val="0"/>
+<Timer val="25ftu"> % initial value [25ftu=250ms]
+<ResetEvents>
+OnLedA OnLedB OnLedC OffLedA OffLedB OffLedC
+</ResetEvents>
+<StartEvents>
+OnLedA OnLedB OnLedC OffLedA OffLedB OffLedC
+</StartEvents>
+<StopEvents/>
+</Timer>
+</Internal>
+</Event>
+
+
+
+</EventConfiguration>
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 3. Target configuration parameters
+
+<TargetConfiguration>
+
+% Prefix to all generated symbols to mimique a namespace
+<Prefix val="FCG"/>
+
+% Elementary data type for words of bits; the Kinetis code
+% generator currently needs 32bit for internal implementation 
+% reasons
+<WordType val="uint32_t"/>
+<WordSize val="32" />
+
+% Elementary data type for indices; must be a signed type
+% and must at least distinguish all present events and all
+% timer states; i.e. 8bit would be fine for this example. 
+% Note that code options may impose further restrictions on 
+% adequate data types.
+<IntegerType val="int16_t"/>
+<IntegerSize val="16"/>
+
+% Use arrays of words to represent bitarrays. If not set,
+% individual words will be used instead.
+<ArrayForBitarray val="true"/>
+
+% Conversion of an event bitaddress to a word-index and a bitmask
+% can be done by look-up tabes (ArrayForBitmasks) or bit-shift
+% arithmetic.
+<ArrayForBitmasks val="false"/>
+<BitAddressArithmetic val="true"/>
+
+
+% Precompile transition relations to arrays of integers.
+% The size of the array for a transition relation is given by
+% "n + 2m" with "n" the number of states and "m" the number
+% of transitions. The arrays must be addressable by the integer
+% data type. For this hello world example, 8bit integers would do, 
+% however, typically this option requires at least 16bit integers.
+<ArrayForTransitions  val="true"/>
+
+% Loop over all pending input events until none can be
+% executed. This option may circumvent issues caused by slow i/o
+% or degraded overalll performance due to competing tasks.
+<LoopPendingInputs val="true"/>
+
+% Generate an name lookup tables. The EmbeddeC target will
+% set up global const arrays with event and state names to
+% convert internal event inducees to string references.
+<EventNameLookup val="true"/>
+<StateNameLookup val="true"/>
+
+% Specify a function that will be called after event execution.
+% The function must take the target event index as the only argument.
+<EventExecutionHook val="report_event"/>
+
+% For the Kinetis K20 MCU, we configure outputs with slow edge
+% and high level driver.
+<KinetisOutputControl val="PORT_PCR_SRE | PORT_PCR_DSE"/>
+
+% For the Kinetis K20 MCU, we configure inputs with pullup
+% and low-pass filter.
+<KinetisInputControl val="PORT_PCR_PFE | PORT_PCR_PE | PORT_PCR_PS"/>
+
+% The below code snippets tailors the overall output to include
+% a main function to go with the Teensy 3.2 board. This is for convenience 
+% only: you may likewise have  an externally maintained application that 
+% includes the generated code and invokes the functions  FCG_cyclic() and 
+% FCG_timerdec() in a cyclic fashion.
+
+<IncludeBefore>
+<![CDATA[
+// validated to compile with arm-none-eabi-gcc  
+// using "-Os -mmcu=cortex-m4 -mthumb -nostdlib -MMD -D__MK20DX256__ -DF_CPU=72000000 "
+
+// std k20 includes (need to link with mk20dx256.o/usb_serial.o)
+#include "mk20dx256.h"
+#include "usb_serial.h"
+
+// forward declaration of lookup tables
+const char* FCG_event_lookup[];
+const char* FCG_state_lookup_0[];
+
+// diagnosis support: print string
+void print_str(const char* str) {
+  while(*str)  usb_serial_putchar(*(str++));
+}
+
+// diagnosis support: print int (max 32bit, signed)
+void print_int(long int num) {
+  char sig= num<0;
+  if(sig) num *= -1;
+  char str[12];
+  int i=12;
+  str[--i]=0;
+  do {
+    unsigned char digit= num % 10;
+    str[--i]= digit + '0';
+    num = num/10;
+  } while((num>0) && (i>1));
+  if(sig) str[--i]='-';    
+  print_str(str+i);
+}
+
+// diagnosis: event execution hook
+void report_event(int16_t tidx) {
+  print_str("ev [");
+  print_str(FCG_event_lookup[tidx]);
+  print_str("]\r\n");
+}
+
+// dummy actuator "beep"
+void beep(int dt) {
+  (void) dt;
+};
+]]>
+</IncludeBefore>
+
+<IncludeAfter>
+<![CDATA[
+// initialise monitor pio
+void init_mpio(void) {
+  //PC5, output, red led on Teensy   
+  PORTC_PCR5 =  PORT_PCR_MUX(1);
+  GPIOC_PDDR |= (1 << 5);
+  //PC6, input with internal pullup, right keyswitch on FGDES board
+  PORTC_PCR6 = PORT_PCR_PFE | PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1); 
+}  
+
+// initialise timer3 (run at F_BUS=36MHz with 20sec period)
+void init_timer3(void) {
+  SIM_SCGC6 |= SIM_SCGC6_PIT;
+  PIT_MCR = 0x00;
+  PIT_LDVAL3 =  20L * F_BUS; // 20sec overflow
+  PIT_TCTRL3 |= 0x01;        // start Timer 3 
+}
+
+// elapsed time in ticks (F_BUS ticks at 36MHz)
+inline unsigned long time_elapsed3(void) {
+  static unsigned long recent = 0 ;
+  unsigned long now = PIT_CVAL3;
+  if(recent < now) recent += 20L * F_BUS;
+  unsigned int inc = recent - now;
+  recent = now;
+  return inc;
+}
+
+// elapsed time in 10ms ticks
+inline unsigned long time_elapsed10ms(void) {
+  static unsigned long recent = 0 ;
+  unsigned long now = PIT_CVAL3;
+  unsigned long inc = 0;
+  if(recent < now) recent += 20L * F_BUS;
+  if(recent - now >= (F_BUS / 100)) {
+    inc=(recent-now)/(F_BUS/100);
+    recent -= inc * (F_BUS / 100);
+  }
+  return inc;
+}
+
+// entry point
+int main(void) {
+  // init support
+  init_mpio();
+  init_timer3();
+
+  // init payload
+  FCG_initpio();
+
+  // system-time to operate with 10ms ticks and an intended overflow at 24h
+  unsigned long systime = 0;
+  const unsigned long systime_sup = 100L*3600L*24L;
+
+  // min/max performance monitor
+  long max_c=-1;
+  long min_c=-1;
+
+  // loop forever
+  while(1) {
+
+    // track performance in timer3 ticks (F_BUS=36MHz)
+    unsigned int elapsed = time_elapsed3();
+    if( (elapsed < min_c) || (min_c==0) ) min_c=elapsed;
+    if( (elapsed > max_c) && (max_c>=0) ) max_c=elapsed;
+    if(min_c<0) min_c=0;
+    if(max_c<0) max_c=0;
+    
+    // update faudes 100Hz timers and systime
+    unsigned int elapsed10ms = time_elapsed10ms();
+    if(elapsed10ms) {
+      FCG_timerdec(elapsed10ms);
+      systime+=elapsed10ms;
+      if(systime>=systime_sup)
+	systime -= systime_sup;
+    }
+
+    // systime flash on Teensy led at 1Hz
+    if(systime % 100 < 5) {
+      GPIOC_PSOR = (1 << 5);
+    } else {
+      GPIOC_PCOR = (1 << 5);
+    };
+
+    // payload
+    FCG_cyclic();
+
+    // report state on (potential) change
+    if(FCG_recent_event>0) {
+      print_str("st [");
+      print_str(FCG_state_lookup_0[FCG_parallel_state_0]);
+      print_str("]\r\n");
+    }  
+
+    // trigger monitor output
+    int monitor_trigger=0;
+
+    // trigger by negative edge on keyswitch PC6 with 2ms debounce
+    static int keyswitch_lowcyc=0;
+    int keyswitch_line= GPIOC_PDIR & ( 1L << 6 );
+    if(keyswitch_line) keyswitch_lowcyc=0;
+    if( (!keyswitch_line) && (keyswitch_lowcyc>=0) ) keyswitch_lowcyc+=elapsed10ms;
+    if(keyswitch_lowcyc>2) monitor_trigger=1;
+    if(monitor_trigger) keyswitch_lowcyc=-1;
+
+    // trigger periodically everey 10 secs
+    static unsigned long monitor_scheduled=0;
+    if(systime >= monitor_scheduled) { 
+      monitor_scheduled+=10*100;
+      monitor_trigger=1;
+    }  
+    if(systime+10*100 < monitor_scheduled)
+      monitor_scheduled -= systime_sup;
+
+    // no monitor
+    if(!monitor_trigger) continue;
+
+    // monitor
+    print_str("monitor:   systime=");
+    print_int(systime*10);
+    print_str("[ms]");
+    if(max_c>0) {
+      print_str("  cycletime=");
+      print_int(min_c/(F_BUS/1000000));
+      print_str("/");
+      print_int(max_c/(F_BUS/1000000));
+      print_str("[min/max usecs]");
+    }
+    print_str("\r\n");
+    min_c=-1;
+    max_c=-1;
+  }
+
+  // never get here
+  return 0;
+}
+]]>
+</IncludeAfter>
+
+</TargetConfiguration>
+
+
+% End of CodeGenerator section
+</CodeGenerator>

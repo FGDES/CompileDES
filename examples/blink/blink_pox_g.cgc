@@ -1,0 +1,248 @@
+% Example Configuration of Code Generator
+
+% This example configures the code generator to compile
+% a hello-world example to IEC ST code formated as PLCopen 
+% compliant XML output (in a particular variant that can
+% be imported by the Geb Automation IDE)
+
+
+<CodeGenerator name="Blink_Pox_B_2017_02">
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 1. Specify generators
+
+% The Generators section lists relevant generators to compile.
+% You may use either file names with paths relative to this
+% configuration file or explicit Generator sections.
+<Generators>
+
+<Generator name="Blink3">
+<TransRel>
+1 OnLedA  2
+2 OnLedB  3
+3 OnLedC  5
+5 OffLedA 6
+6 OffLedB 7
+7 OffLedC 1
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+<Generator name="Delay">
+<TransRel>
+1 OnLedA  2
+1 OnLedB  2
+1 OnLedC  2
+1 OffLedA 2
+1 OffLedB 2
+1 OffLedC 2
+2 Tick    1
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+
+<Generator name="WaitButton">
+<TransRel>
+1 PushButton 2
+1 OffLedC    1
+2 PushButton 2
+2 OffLedC    1
+2 OnLedA     2
+</TransRel>
+<InitStates> 1 </InitStates>
+</Generator>
+</Generators>
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 2. Specify event execution semantics
+
+<EventConfiguration>
+
+%
+% Output events to turn on/off LEDs on QX55.1, QX55.2 and QX55.3
+%
+% Target dependent:
+%
+% For the IEC ST target, Set/Clr-actions are meant to directly 
+% refer to a marker or input/output line address. However, there
+% is no type checking at this stage, so you may use symbolic
+% address. Exe-actions are not supported for PLCopen XML output.
+%
+%
+
+<Event name="OnLedA">
+<Output>
+<Priority val="20"/>
+<Actions> "%QX55.1" +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OnLedB">
+<Output>
+<Priority val="20"/>
+<Actions> "%QX55.2" +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OnLedC">
+<Output>
+<Priority val="20"/>
+<Actions> "%QX55.3" +Set+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedA">
+<Output>
+<Priority val="20"/>
+<Actions> "%QX55.1" +Clr+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedB">
+<Output>
+<Priority val="20"/>
+<Actions> "%QX55.2" +Clr+ </Actions>
+</Output>
+</Event>
+
+<Event name="OffLedC">
+<Output>
+<Priority val="20"/>
+<Actions> "%QX55.3" +Clr+ </Actions>
+</Output>
+</Event>
+
+
+
+%
+% Input event to sense keyswitch at IX54.1
+%
+% For the IEC ST target, input lines are meant to directly 
+% refer to a marker or input/output line address. However, there
+% is no type checking at this stage, so you may use any symbolic
+% address. Value-triggers are not supported at this stage.
+%
+<Event name="PushButton">
+<Input>    
+<Priority val="10"/>
+<Triggers> "%IX54.1" +NegEdge+ +Static+ </Triggers>
+</Input>
+</Event>
+
+
+% Internal timer event Tick
+%
+% For the IEC ST target, the generated timer code is implemented
+% as counters of IEC type TIME. Allthough this amounts to a
+% resolution of 1ms, there is no guarantee that the actual
+% implementation is that accurate. Platform dependent code 
+% at the beginning of the cyclic function is meant to drive
+% the timers by setting the variable "fcg_time_elapsed" to the
+% time elpased since the last invokation.
+%
+<Event name="Tick">
+<Internal>    
+<Priority val="0"/>
+<Timer val="TIME#1s"> % initial value [using IEC time literal]
+<ResetEvents>
+OnLedA OnLedB OnLedC OffLedA OffLedB OffLedC
+</ResetEvents>
+<StartEvents>
+OnLedA OnLedB OnLedC OffLedA OffLedB OffLedC
+</StartEvents>
+<StopEvents/>
+</Timer>
+</Internal>
+</Event>
+
+
+
+</EventConfiguration>
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+% 3. Target configuration parameters
+
+<TargetConfiguration>
+
+% Prefix to all generated symbols to mimique a namespace
+<Prefix val="fcg"/>
+
+% Elementary data type for words of bits; good choices
+% are architecture supported types, we give 8bit a try
+<WordType val="BYTE"/>
+<WordSize val="8" />
+
+% Elementary data type for indicees; must be a signed type
+% and must at least distinguish all present events and all
+% timer states; i.e. 8bit would be fine for this example. 
+% Note that code options impose further restrictions on 
+% adequate data types.
+<IntegerType val="INT"/>
+<IntegerSize val="16"/>
+
+% Use arrays of words to represent bitarrays. If not set,
+% individual words will be used instead. 
+<ArrayForBitarray val="false"/>
+
+% Use bisection to figure left most bit in bit-arrays
+% individual will be used instead. 
+<BisectionForBitArray val="true"/>
+
+% Conversion of an event bitaddress to a word-index and a bitmask
+% can be done by look-up tabes (ArrayForBitmasks) or bit-shift
+% arithmetic (BitAddressArithmetic).
+<ArrayForBitmasks val="false"/>
+<BitAddressArithmetic val="true"/>
+
+% Precompile transition relations to arrays of integers.
+% The size of the array for a transition relation is given by
+% "n + 2 x m" with "n" the number of states and "m" the number
+% of transitions. The arrays must be addressable by the integer
+% data type. For the hello worls example, 8bit integers would do, 
+% however, typically this option requires at 16bit integers.
+<ArrayForTransitions  val="false"/>
+
+% Loop executing events events until no input event can be
+% scheduled. This option may circumvent issues caused by slow i/o
+% or degraded overalll performance due to competing tasks.
+<LoopPendingInputs val="true"/>
+
+% Loop executing events until neither input nor output events can 
+% be scheduled. Need to ensure that there are no strictly connected 
+% components with output events only. This option may circumvent 
+% issues caused by slow i/o or degraded overalll performance due to 
+% competing tasks.
+<LoopEnabledOutputs val="true"/>
+
+% IEC ST specific option: control how physical addresses
+% are formally declared external when used within the generated
+% cyclic functiomn block. The strict approach is to declare
+% "VAR_EXTERNAL" and to have a corresponding declaration in
+% a program or in a configuration. However, some environments 
+% refuse this approach.
+<IecDeclarePhysical val="VAR"/>
+
+% IEC code option: use overloaded operators for time maths (not supported by GEB IDE)
+<IecTimeOperators val="false"/>
+
+% PLCopen/XML scheme version (GEB IDE insists in the 2005 version)
+<IecSchemeVersion val="v1.01"/>
+
+% PLCopen/XML specific option: set tool vendor attribute
+<IecToolVendor val="FGDES/LRT"/>
+
+% PLCopen/XML specific option: set content version (GEB IDE insists in this attribute)
+<IecContentVersion val="1"/>
+
+
+
+
+</TargetConfiguration>
+
+
+% End of CodeGenerator section
+</CodeGenerator>

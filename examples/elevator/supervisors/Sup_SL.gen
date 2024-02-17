@@ -1,0 +1,119 @@
+<Generator>
+"SupConNB((SupConNB((Generator),(Gen...e(PrefixClosure(Spec)) [minstate]))" 
+
+% 
+%  Statistics for SupConNB((SupConNB((Generator),(Gen...e(PrefixClosure(Spec)) [minstate]))
+% 
+%  States:        52
+%  Init/Marked:   1/16
+%  Events:        22
+%  Transitions:   64
+%  StateSymbols:  0
+%  Attrib. E/S/T: 5/0/0
+% 
+
+<Alphabet>
+vc_up12       +C+           vc_up01       vc_dw10       +C+           vc_dw21      
+c_lv0         c_lv1         c_lv2         c_slwtop0     c_slwbot1     c_slwtop1    
+c_slwbot2     c_fst         c_slw         c_ar1         c_ar0         c_ar2        
+c_stp         +C+           vc_0stp       vc_2stp       vc_1stp       c_up         
++C+           c_down        +C+          
+</Alphabet>
+
+<States>
+1              2              3             
+<Consecutive>
+5              18            
+</Consecutive>
+20             21             22             23             24             25            
+26             28             30            
+<Consecutive>
+32             38            
+</Consecutive>
+40             42             43             44            
+<Consecutive>
+46             60            
+</Consecutive>
+</States>
+
+<TransRel>
+1              vc_up01       2             
+2              c_fst         3             
+3              c_up          5             
+5              c_lv0         6             
+6              c_slwtop0     7             
+7              c_slwbot1     8             
+8              c_slw         9             
+8              c_ar1         10            
+9              c_ar1         11            
+10             c_slw         11            
+10             c_stp         12            
+11             vc_up12       57            
+11             vc_dw10       58            
+11             c_stp         13            
+12             c_slw         13            
+12             vc_1stp       14            
+13             vc_1stp       15            
+14             c_slw         15            
+15             vc_up12       16            
+15             vc_dw10       17            
+16             c_fst         30            
+17             c_fst         18            
+18             c_down        20            
+20             c_lv1         21            
+21             c_slwbot1     22            
+22             c_slwtop0     23            
+23             c_slw         24            
+23             c_ar0         25            
+24             c_ar0         26            
+25             c_slw         26            
+26             c_stp         28            
+28             vc_0stp       1             
+30             c_up          32            
+32             c_lv1         33            
+33             c_slwtop1     34            
+34             c_slwbot2     35            
+35             c_slw         36            
+35             c_ar2         37            
+36             c_ar2         38            
+37             c_slw         38            
+38             c_stp         40            
+40             vc_2stp       42            
+42             vc_dw21       43            
+43             c_fst         44            
+44             c_down        46            
+46             c_lv2         47            
+47             c_slwbot2     48            
+48             c_slwtop1     49            
+49             c_slw         50            
+49             c_ar1         51            
+50             c_ar1         52            
+51             c_slw         52            
+51             c_stp         12            
+52             vc_up12       53            
+52             vc_dw10       54            
+52             c_stp         13            
+53             c_fst         56            
+54             c_fst         55            
+55             c_down        20            
+56             c_up          32            
+57             c_fst         60            
+58             c_fst         59            
+59             c_down        20            
+60             c_up          32            
+</TransRel>
+
+<InitStates>
+1             
+</InitStates>
+
+<MarkedStates>
+1              2              3             
+<Consecutive>
+12             18            
+</Consecutive>
+28             30             40             42             43             44            
+</MarkedStates>
+
+
+</Generator>

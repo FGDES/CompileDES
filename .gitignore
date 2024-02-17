@@ -1,0 +1,40 @@
+# ignore emacs backups
+*~
+*.bak
+*._*
+
+# ignore c build
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.lib
+*.pro.user*
+
+# ignore build dirs
+build
+doc
+Makefile_by_*
+examples/libwpc/libuio*
+examples/libwpc/libkbus*
+examples/libwpc/wago_ipc_kbus*
+bin
+faudes_*
+
+# ignore libFAUDES binaries 
+libfaudes_linux/*
+libfaudes_lsb/*
+libfaudes_osx/*
+libfaudes_win/*
+
+# ignore example archieve
+examples/blink/*.c_*
+examples/blink/*.xml_*
+examples/blink/*.st_*
+
+# osx irritations
+**/.DS*
+
+# local archive
+local
