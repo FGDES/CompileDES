@@ -19,7 +19,6 @@ Makefile_by_*
 examples/libwpc/libuio*
 examples/libwpc/libkbus*
 examples/libwpc/wago_ipc_kbus*
-bin
 faudes_*
 
 # ignore libFAUDES binaries 
