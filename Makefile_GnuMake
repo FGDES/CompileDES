@@ -25,7 +25,7 @@ ifneq ($(findstring Linux,$(shell uname -s)),)
 LIBFAUDES=./libFAUDES_lx
 TARGET=compiledes_lx
 endif
-ifneq ($(findstring MSYS,$(shell uname -s)),)
+ifneq ($(findstring MINGw64,$(shell uname -s)),)
 LIBFAUDES=./libFAUDES_msys
 TARGET=compiledes_msys
 endif

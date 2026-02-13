@@ -67,6 +67,7 @@ unset FAUDES_LINKING
 
 # harvest results
 mv ${FAUDES_LIB}/build/libfaudes.* ${FAUDES_LIB}
+mv ${FAUDES_LIB}/build/faudes.* ${FAUDES_LIB}
 mv ${FAUDES_LIB}/build/include ${FAUDES_LIB}
 
 #safe disk space
