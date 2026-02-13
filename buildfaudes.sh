@@ -64,15 +64,15 @@ unset FAUDES_LINKING
 # harvest results
 rm -rf ${FAUDES_LIB}
 mkdir ${FAUDES_LIB}
-mv ${FAUDES_DST}/libfaudes.* ${FAUDES_LIB}
-cp -R ${FAUDES_DST}/include ${FAUDES_LIB}/
+mv ${FAUDES_SRC}/libfaudes.* ${FAUDES_LIB}
+cp -R ${FAUDES_SRC}/include ${FAUDES_LIB}/
 
 
 # safe some disk space
 echo ==================== clean source tree
 make -C $FAUDES_SRC clean
 rm -rf $FAUDES_SRC/plugins/iodevice/wago/bin/*
-rm -rf $FAUDES_DST/bin/*
+rm -rf $FAUDES_LIB/bin/*
 
 
 ############################################################################
