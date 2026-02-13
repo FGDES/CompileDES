@@ -14,27 +14,17 @@
 #ifndef FAUDES_TP_INCLUDE_H
 #define FAUDES_TP_INCLUDE_H
 
-#include "tp_timeinterval.h"
-#include "tp_timeconstraint.h"
-#include "tp_attributes.h"
-#include "tp_tgenerator.h"
-#include "tp_tparallel.h"
-
-
-
-#endif
-
 
 
 /**
  
 
-@defgroup TimedPlugin Timed Automata PlugIn
+@defgroup TimedPlugin Timed Automata Plug-In
 
 
 @ingroup AllPlugins
 
-@section Overview
+@subsection TpOverview Overview
 
 <p>
 This plugin extends libFAUDES to model timed automata as discussed
@@ -58,7 +48,7 @@ vol 126, pp 183-235, 1994.
 </i>
 </p>
 
-@section License
+@subsection TpLicense License
 
 <p>
 The current implementation of the timed plugin is a re-design based 
@@ -67,9 +57,6 @@ libFAUDES 1.0 to 2.xx. It is distributed with libFAUDES and under the terms of t
 </p>
 
 <br>
-<br>
-<br>
-
 
 <p>
 Copyright (c) 2007, Thomas Moor.
@@ -78,4 +65,13 @@ Copyright (c) 2007, Thomas Moor.
 
 */
 
+#include "tp_timeinterval.h"
+#include "tp_timeconstraint.h"
+#include "tp_attributes.h"
+#include "tp_tgenerator.h"
+#include "tp_tparallel.h"
+
+
+
+#endif
 

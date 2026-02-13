@@ -1,9 +1,9 @@
-/** @file cfl_helper.h   Helper functions */
+/** @file cfl_utils.h   C-level utilities functions */
 
 /* FAU Discrete Event Systems Library (libfaudes)
 
    Copyright (C) 2006  Bernd Opitz
-   Copyright (C) 2008-2010 Thomas Moor
+   Copyright (C) 2008-2024 Thomas Moor
    Exclusive copyright is granted to Klaus Schmidt
 
    This library is free software; you can redistribute it and/or
@@ -21,8 +21,8 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 
-#ifndef FAUDES_HELPER_H
-#define FAUDES_HELPER_H
+#ifndef FAUDES_UTILS_H
+#define FAUDES_UTILS_H
 
 #include "cfl_definitions.h"
 #include "cfl_platform.h"
@@ -111,7 +111,18 @@ extern FAUDES_API std::string CollapsString(const std::string& rString, unsigned
 extern FAUDES_API Idx ToIdx(const std::string& rString);
 
 /**
- * Substitute in string
+ * Convert to lower case
+ *
+ * @param rString
+ *   Source string to convert
+ * @return 
+ *   Lower case  string
+ *
+ */
+extern FAUDES_API std::string ToLowerCase(const std::string& rString);
+   
+/**
+ * Substitute globally in string
  *
  * @param rString
  *   Source string to substitute
@@ -125,7 +136,6 @@ extern FAUDES_API Idx ToIdx(const std::string& rString);
  */
 extern FAUDES_API std::string StringSubstitute(const std::string& rString,const std::string& rFrom,const std::string& rTo);
    
-
 
 /**
  * Return FAUDES_VERSION as std::string
@@ -151,6 +161,13 @@ extern FAUDES_API std::string PluginsString();
  */
 extern FAUDES_API std::string ContributorsString();
 
+/**
+ * Return contributors as std::string
+ *
+ * @return 
+ *   std::string 
+ */
+extern FAUDES_API std::string BuildString();
 
 /**
  * Convenience function: process dot file
@@ -176,6 +193,17 @@ extern FAUDES_API void ProcessDot(const std::string& rDotFile, const std::string
 
 
 /**
+ * Convenience function: test for dot exec to exits
+ *
+ * @param rDotExec
+ *   path/name of executable
+ *
+ */
+extern FAUDES_API bool DotReady(const std::string& rDotExec = "dot");
+
+  
+ 
+/**
  * Create a temp file, length 0
  *
  * @return
@@ -183,29 +211,21 @@ extern FAUDES_API void ProcessDot(const std::string& rDotFile, const std::string
  */
 extern FAUDES_API std::string CreateTempFile(void);
 
-
+ 
 /**
- * Delete a file
+ * Extract directory from (full) path; i.e., remove the last
+ * separator and anything thereafer.
  *
- * @param rFileName
- *   Name of file to delete
- */
-extern FAUDES_API bool RemoveFile(const std::string& rFileName);
-
-/**
- * Std dir-separator.
- * @return
- *   Separator as one-char string
- */
-extern FAUDES_API const std::string& PathSeparator(void);
-
-/**
- * Extract directory from full path.
+ * This is a compatible left-over from pre-v2.32. As of v2.32. 
+ * We now take care that out internal representation is in
+ * posix style, i.e., case (2) should not happen. 
  *
  * @param rFullPath
- *   Full name of file eg "/home/friend/data/generator.gen"
+ *   Full name of file eg (1) "/home/friend/data/generator.gen"
+ *   Full name of file eg (2) "C:\data\project\generator.gen"
  * @return
- *   Directory eg "/home/friend/data"
+ *   Directory eg (1) "/home/friend/data"
+ *   Directory eg (2) "C:\data\project"
  */
 extern FAUDES_API std::string ExtractDirectory(const std::string& rFullPath);
 
@@ -220,7 +240,7 @@ extern FAUDES_API std::string ExtractDirectory(const std::string& rFullPath);
 extern FAUDES_API std::string ExtractFilename(const std::string& rFullName);
 
 /**
- * Extract file name from full path. This version also
+ * Extract file basename from full path. This version also
  * removes the last suffix.
  *
  * @param rFullName
@@ -231,27 +251,27 @@ extern FAUDES_API std::string ExtractFilename(const std::string& rFullName);
 extern FAUDES_API std::string ExtractBasename(const std::string& rFullName);
 
 /**
- * Extract file name from full path. This version also
- * remove the last suffix.
+ * Extract extension from full path, i.e. ontain the last suffix.
  *
  * @param rFullName
  *   Full path of file eg "/home/friend/data/generator.gen"
  * @return
  *   Extension "gen"
  */
-extern FAUDES_API std::string ExtractExtension(const std::string& rFullName);
+extern FAUDES_API std::string ExtractSuffix(const std::string& rFullName);
 
 /**
- * Construct full path from directory and filename.
+ * Prepend one path before another. Specifically, insert a
+ * path seperator if necessary.
  *
- * @param rDirectory
+ * @param rLeft
  *   Directory eg "/home/friend/data"
- * @param rFileName
+ * @param rRight
  *   File eg "generator.gen"
  * @return
  *   Path eg "/home/friend/data/generator.gen"
  */
-extern FAUDES_API std::string PrependDirectory(const std::string& rDirectory, const std::string& rFileName);
+extern FAUDES_API std::string PrependPath(const std::string& rLeft, const std::string& rRight);
 
 /**
  * Test existence of file
@@ -288,7 +308,7 @@ extern FAUDES_API bool FileCopy(const std::string& rFromFile, const std::string&
 /**
  * Test existence of directory
  *
- * @param rDitectory
+ * @param rDirectory
  *   Name of file to test
  * @return
  *   True <> can open directory for reading
@@ -326,16 +346,13 @@ public:
   /** Acess static instance */
   static ConsoleOut* G(void);
   /** Write a std::string message (optional progress report and verbosity) */
-  virtual void Write(const std::string& message,long int cntnow=0, long int cntdone=0, int verb=0);
+  virtual void Write(const std::string& message,long int cntnow=0, long int cntdone=0, int verb=1);
   /** Redirect to file */
   void ToFile(const std::string& filename);
   /** Query filename */
   const std::string& Filename(void) { return mFilename;}; 
   /** Redirect */
   void Redirect(ConsoleOut* out);
-  /** Mute */
-  void Mute(bool on) {mMute=on;};
-  bool Mute() { return mMute;};
   /** Verbosity */
   void Verb(int verb) {mVerb=verb;};
   int Verb() { return mVerb;};  
@@ -345,14 +362,13 @@ protected:
   /** Destructor */
   virtual ~ConsoleOut(void);
   /** Writing hook. Re-implement this function in order to grab all output */
-  virtual void DoWrite(const std::string& message,long int cntnow=0, long int cntdone=0, int verb=0);
+  virtual void DoWrite(const std::string& message,long int cntnow=0, long int cntdone=0, int verb=1);
 private:
   /** Private output stream */
   std::ofstream* pStream;
   /** Private record file name */
   std::string mFilename;
   /** Mute flag */
-  bool mMute;
   int mVerb;
   /** Redirect */
   ConsoleOut* pInstance;
@@ -360,7 +376,13 @@ private:
   static ConsoleOut* smpInstance;
 };
 
- 
+
+/** API wrapper Print at verbosity */
+extern FAUDES_API void Print(int v, const std::string& message);
+extern FAUDES_API void Print(const std::string& message);
+extern FAUDES_API void Verbosity(int v);
+extern FAUDES_API int Verbosity(void);
+  
 /**
  * Debugging counter. Counts items as specified by the type string and reports
  * sums on exit. You must define the macro FAUDES_DEBUG_CODE to get a report.
@@ -491,7 +513,7 @@ extern FAUDES_API bool TestProtocol(void);
 
 /** Test protocol diff macro */
 #define FAUDES_TEST_DIFF() { if(!TestProtocol()) { \
-    FAUDES_WRITE_CONSOLE("FAUDES_TEST_DIFF: sensed test case error in " << __FILE__); exit(1);} }
+    FAUDES_WRITE_CONSOLE("FAUDES_TEST_DIFF: sensed test case error in " << __FILE__); exit(0);} }
 
 
 /** Algorithm loop callback 

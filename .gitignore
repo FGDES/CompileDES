@@ -14,6 +14,7 @@
 
 # ignore build dirs
 build
+bin
 doc
 Makefile_by_*
 examples/libwpc/libuio*
@@ -21,11 +22,11 @@ examples/libwpc/libkbus*
 examples/libwpc/wago_ipc_kbus*
 faudes_*
 
-# ignore libFAUDES binaries 
-libfaudes_linux/*
-libfaudes_lsb/*
-libfaudes_osx/*
-libfaudes_win/*
+# ignore libFAUDES  
+libFAUDES_sources/*
+libFAUDES_lx/*
+libFAUDES_osx/*
+libFAUDES_msys/*
 
 # ignore example archieve
 examples/blink/*.c_*

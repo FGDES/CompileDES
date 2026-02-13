@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
 Copyright (C) 2006  Bernd Opitz
-Copyright (C) 2007  Thomas Moor
+Copyright (C) 2007, 2024  Thomas Moor
 Exclusive copyright is granted to Klaus Schmidt
 
 This library is free software; you can redistribute it and/or
@@ -45,7 +45,7 @@ namespace faudes {
 /**
  * Generator with specified attribute types.
  *
- * @section Overview
+ * @subsection AGeneratorOverview Overview
  *
  * The TaGenerator takes four template parameters to specify attribute classes for
  * the global attribute and state-, event- and transition-attributes. 
@@ -67,8 +67,9 @@ namespace faudes {
  */
 
 template <class GlobalAttr, class StateAttr, class EventAttr, class TransAttr>
-class FAUDES_API TaGenerator : public vGenerator {
+class FAUDES_TAPI TaGenerator : public vGenerator {
  public:
+
     
   /** Convenience typdef for member transiton set */
   typedef TaTransSet<TransAttr> ATransSet;
@@ -182,12 +183,13 @@ class FAUDES_API TaGenerator : public vGenerator {
   virtual TaGenerator& Assign(const Type& rSrc); 
 
   /**
-   * Assignment operator (uses Assign(Generator&) )
+   * Assignment operator (uses DoAssign(Generator&) )
    *
    * @param rOtherGen
    *   Other generator
    */
-  virtual TaGenerator& operator= (const TaGenerator& rOtherGen);
+  TaGenerator& operator= (const TaGenerator& rOtherGen);
+  
 
   /**
    * Destructive copy to other TaGenerator 
@@ -1024,8 +1026,8 @@ TEMP THIS THIS::NewAGen(void) const {
   THIS res;
   // fix base data
   res.EventSymbolTablep(BASE::mpEventSymbolTable);
-  res.mStateNamesEnabled=BASE::mStateNamesEnabled;
-  res.mReindexOnWrite=BASE::mReindexOnWrite;  
+  res.StateNamesEnabled(BASE::mStateNamesEnabled);  
+  res.ReindexOnWrite(BASE::mReindexOnWrite);  
   return res;
 }
 

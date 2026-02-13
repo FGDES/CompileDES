@@ -122,11 +122,11 @@ std::string mCsourceLink="http://www.rt.eei.uni-erlangen.de/FGdes/faudes/csource
 std::string mCssFile="faudes.css";
 */
 
-std::string mDownloadLink="http://www.rt.techfak.fau.de/FGdes/download.html";
-std::string mFaudesLink="http://www.rt.techfak.fau.de/FGdes/faudes";
-std::string mDestoolLink="http://www.rt.techfak.fau.de/FGdes/destool";
-std::string mLuafaudesLink="http://www.rt.techfak.fau.de/FGdes/faudes/luafaudes/";
-std::string mCsourceLink="http://www.rt.techfak.fau.de/FGdes/faudes/csource/";
+std::string mDownloadLink="http://fgdes.tf.fau.de/download.html";
+std::string mFaudesLink="http://fgdes.tf.fau.de/faudes";
+std::string mDestoolLink="http://fgdes.tf.fau.de/destool";
+std::string mLuafaudesLink="http://fgdes.tf.fau.de/faudes/luafaudes/";
+std::string mCsourceLink="http://fgdes.tf.fau.de/faudes/csource/";
 std::string mCssFile="faudes.css";
 
 std::string mThisChapterClass="chapter_this";
@@ -510,17 +510,23 @@ void MathHtml(std::ostream* pStream, const std::string& rMathString) {
   buff=StringSubstitute(buff,"\\delta","delta");
   buff=StringSubstitute(buff,"\\epsilon","epsilon");
   buff=StringSubstitute(buff,"\\omega","w");
+  buff=StringSubstitute(buff,"\\Upsilon","Upsilon");
+  buff=StringSubstitute(buff,"\\pi","pi");
   // one-arg macros
   buff=TexMacroSubstitute1(buff,"\\ProInv","Pinv#1");
   buff=TexMacroSubstitute1(buff,"\\Pro","P#1");
   buff=TexMacroSubstitute1(buff,"\\Closure","Closure(#1)");
   buff=TexMacroSubstitute1(buff,"\\Prefix","Prefix(#1)");
+  buff=TexMacroSubstitute1(buff,"\\CtrlPfx","CtrlPfx(#1)");
+  buff=TexMacroSubstitute1(buff,"\\Shape","Shape(#1)");
   // tex math spacing and plain text
   buff=TexMacroSubstitute1(buff,"\\texttt","\\text{<tt>#1</tt>}");
   buff=TexMacroSubstitute1(buff,"\\mathtt","\\text{<tt>#1</tt>}");
   buff=TexMacroSubstitute1(buff,"\\textit","\\text{<i>#1</i>}");
   buff=TexMacroSubstitute1(buff,"\\mathit","\\text{<i>#1</i>}");
-  buff=TexMacroSubstitute1(buff,"\\mathsf","\\text{<sf>#1</i>}");
+  buff=TexMacroSubstitute1(buff,"\\mathsf","\\text{<sf>#1</sf>}");
+  buff=TexMacroSubstitute1(buff,"\\mathbb","\\text{<it>#1</it>}");
+  buff=TexMacroSubstitute1(buff,"\\textbb","\\text{<it>#1</it>}");
   buff=TexSpacing(buff);
   // super- and subscripts
   buff=TexScripts(buff);
@@ -530,6 +536,7 @@ void MathHtml(std::ostream* pStream, const std::string& rMathString) {
   buff=StringSubstitute(buff,"\\[","[");
   buff=StringSubstitute(buff,"\\]","]");
   buff=StringSubstitute(buff,"=","&nbsp;=&nbsp;");
+  buff=StringSubstitute(buff,"\\colon","&nbsp:&nbsp;");
   buff=StringSubstitute(buff,"class&nbsp;=&nbsp;","class=");     // fix csss class
   buff=StringSubstitute(buff,":&nbsp;=&nbsp;","&nbsp;:=&nbsp;"); //fix :=
   buff=StringSubstitute(buff,"\\neq","&nbsp&ne;&nbsp;");
@@ -543,9 +550,10 @@ void MathHtml(std::ostream* pStream, const std::string& rMathString) {
   buff=StringSubstitute(buff,"\\cdots","...");
   buff=StringSubstitute(buff,"\\cdot",".");
   buff=StringSubstitute(buff,"\\infty","&infin;");
+  buff=StringSubstitute(buff,"\\inf","inf");
+  buff=StringSubstitute(buff,"\\in","&nbsp;&isin;&nbsp;");
   buff=StringSubstitute(buff,"\\nin","&nbsp;&notin;&nbsp;");
   buff=StringSubstitute(buff,"\\not\\in","&nbsp;&notin;&nbsp;");
-  buff=StringSubstitute(buff,"\\in","&nbsp;&isin;&nbsp;");
   buff=StringSubstitute(buff,"\\subseteq","&nbsp;&sube;&nbsp;");
   buff=StringSubstitute(buff,"\\subset","&nbsp;&sub;&nbsp;");
   buff=StringSubstitute(buff,"\\supseteq","&nbsp;&supe;&nbsp;");
@@ -554,7 +562,6 @@ void MathHtml(std::ostream* pStream, const std::string& rMathString) {
   buff=StringSubstitute(buff,"\\dcup","&cup;"); // should be "&cup;&#775;" for "dot above"
   buff=StringSubstitute(buff,"\\cap","&cap;");
   buff=StringSubstitute(buff,"\\sup","sup");
-  buff=StringSubstitute(buff,"\\inf","inf");
   buff=StringSubstitute(buff,"\\max","max");
   buff=StringSubstitute(buff,"\\min","min");
   buff=StringSubstitute(buff,"\\parallel","||");
@@ -571,6 +578,7 @@ void MathHtml(std::ostream* pStream, const std::string& rMathString) {
   buff=StringSubstitute(buff,"\\Uparrow","&#x21e7;");
   buff=StringSubstitute(buff,"\\Downarrow","&#x21e9;");
   // ie7 fallback symbols
+  /*
   buff=StringSubstitute(buff,"&isin;","<span class=\"faudes_fmath\">&isin;</span>"); 
   buff=StringSubstitute(buff,"&notin;","<span class=\"faudes_fmath\">&notin;</span>"); 
   buff=StringSubstitute(buff,"&exist;","<span class=\"faudes_fmath\">&exist;</span>"); 
@@ -587,7 +595,8 @@ void MathHtml(std::ostream* pStream, const std::string& rMathString) {
   buff=StringSubstitute(buff,"&sub;","<span class=\"faudes_fmath\">&sub;</span>"); 
   buff=StringSubstitute(buff,"&sube;","<span class=\"faudes_fmath\">&sube;</span>"); 
   buff=StringSubstitute(buff,"&sup;","<span class=\"faudes_fmath\">&sup;</span>"); 
-  buff=StringSubstitute(buff,"&supe;","<span class=\"faudes_fmath\">&supe;</span>"); 
+  buff=StringSubstitute(buff,"&supe;","<span class=\"faudes_fmath\">&supe;</span>");
+  */
   // done
   *pStream << buff;
 }
@@ -1449,7 +1458,7 @@ void  XtractPages(TokenReader& src,const std::string& rDstDir) {
     std::transform(mFrefSection.begin(), mFrefSection.end(), mFrefSection.begin(), tolower);
     std::transform(mFrefPage.begin(), mFrefPage.end(), mFrefPage.begin(), tolower);
     // dst file
-    std::string dstfile=rDstDir + faudes_pathsep() + mFrefSection + "_" + mFrefPage +".fref";
+    std::string dstfile=PrependPath(rDstDir,mFrefSection + "_" + mFrefPage +".fref");
     std::cerr << "ref2html: extracting page to \"" << dstfile << "\"" << std::endl;
     TokenWriter dst(dstfile);
     // copy section
@@ -1494,9 +1503,10 @@ void  XtractFiles(TokenReader& src,const std::string& rDstDir) {
       continue;
     } 
     // dst file
-    std::string dstfile=rDstDir + faudes_pathsep() + "images" + 
-      faudes_pathsep() + name;
-    std::transform(dstfile.begin(), dstfile.end(), dstfile.begin(), tolower);
+    std::string dstfile;
+    std::transform(name.begin(), name.end(), name.begin(), tolower);
+    dstfile=PrependPath(rDstDir,"images");
+    dstfile=PrependPath(dstfile,name);
     std::cerr << "ref2html: extracting image file to \"" << dstfile << "\"" << std::endl;
     // setup stream
     std::fstream fsout;
@@ -1609,7 +1619,7 @@ void ProcessSection(TokenWriter& rTw, TokenReader& rTr) {
 	rTr.ReadEnd("fdmath");
 	continue;
     }
-    // do my special tags: dmath
+    // do my special tags: imath
     if(token.IsBegin("fimath")) {
         rTr.ReadBegin("fimath", token);
         std::string mtext;
@@ -1700,7 +1710,7 @@ void ProcessSection(TokenWriter& rTw, TokenReader& rTr) {
 	rTr.ReadEnd("falllit");
 	continue;
     }
-    // do my special tags: fliteratur (definition of)
+    // do my special tags: fliterature (definition of)
     if(token.IsBegin("fliterature")) {
         rTr.ReadBegin("fliterature", token);
 	std::string label=token.AttributeStringValue("name");
@@ -1715,7 +1725,7 @@ void ProcessSection(TokenWriter& rTw, TokenReader& rTr) {
 	rTr.ReadEnd("fcontributors");
 	continue;
     }
-    // do my special tags: flink
+    // do my special tags: fcite
     if(token.IsBegin("fcite")) {
         rTr.ReadBegin("fcite", token);
         std::string label=token.AttributeStringValue("name");
@@ -2303,9 +2313,9 @@ int main(int argc, char *argv[]) {
     std::set< std::string > dirfiles = ReadDirectory(*sit);
     std::set< std::string >::iterator dit=dirfiles.begin();
     for(;dit!=dirfiles.end();++dit) {
-      std::string ext  = ExtractExtension(*dit);
+      std::string ext  = ExtractSuffix(*dit);
       std::string base = ExtractBasename(*dit);
-      std::string src= PrependDirectory(*sit,base + ".fref");
+      std::string src= PrependPath(*sit,base + ".fref");
       // skip if not an fref file
       if(ext!="fref") continue;
       // record
@@ -2326,7 +2336,7 @@ int main(int argc, char *argv[]) {
     std::string base = ExtractBasename(*sit);
     std::string src= *sit;
     std::string dst= mDstFile;
-    if(dirdst) dst=PrependDirectory(mDstFile,base + ".html");
+    if(dirdst) dst=PrependPath(mDstFile,base + ".html");
     // process
     if(mSrcFiles.size()>1)
       std::cout << "ref2html: processing " << src << " to " << dst << std::endl;

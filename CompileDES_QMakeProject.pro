@@ -2,17 +2,17 @@
 #
 # qmake project file for libFAUDES application CompileDES
 #
-# Copyright 2016-2019 Thomas Moor
+# Copyright 2016-2025 Thomas Moor
 #
 #
 
 # set version number
-DEFINES += "COMPILEDES_VERSION=\\\"3.13\\\""
+DEFINES += "COMPILEDES_VERSION=\\\"3.14\\\""
 
 # location of libFAUDES
-unix: LIBFAUDES = ./libfaudes_linux
-macx: LIBFAUDES = ./libfaudes_osx
-win32: LIBFAUDES = ./libfaudes_win
+unix: LIBFAUDES = ./libFAUDES_lx
+macx: LIBFAUDES = ./libFAUDES_osx
+win32: LIBFAUDES = ./libFAUDES_msys
 
 # C++ dources and headers
 SOURCES += src/cgp_eventconfig.cpp
@@ -61,7 +61,9 @@ MAKEFILE = Makefile_by_QMake
 OBJECTS_DIR = build/obj
 
 # destination for binary
-TARGET = build/compiledes
+linux: TARGET = build/compiledes_lx
+macx:  TARGET = build/compiledes_osx
+
 
 # name of static libFAUDES archive
 unix:LIBFAUDES_LIB = $$LIBFAUDES/libfaudes.a

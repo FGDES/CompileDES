@@ -4,7 +4,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
    Copyright (C) 2006  Bernd Opitz
-   Copyright (C) 2007  Thomas Moor
+   Copyright (C) 2007, 2024  Thomas Moor
    Exclusive copyright is granted to Klaus Schmidt
 
    This library is free software; you can redistribute it and/or
@@ -77,9 +77,13 @@ template<class Attr> class TaIndexSet;
 
 class FAUDES_API IndexSet : public TBaseSet<Idx> {
 
-FAUDES_TYPE_DECLARATION(IndexSet,IndexSet,TBaseSet<Idx>)
-
 public:
+
+  FAUDES_TYPE_DECLARATION(IndexSet,IndexSet,TBaseSet<Idx>)
+
+  using TBaseSet<Idx>::operator=;
+  using TBaseSet<Idx>::operator==;
+  using TBaseSet<Idx>::operator!=;
 
   /** 
    * We implement "protected privacy for template classes" by friendship.
@@ -182,7 +186,15 @@ public:
    * @return
    *   String
    */
-  std::string Str(const Idx& rIndex) const {return ToStringInteger(rIndex); };
+  virtual std::string Str(const Idx& rIndex) const {return ToStringInteger(rIndex); };
+
+  /**
+   * Return pretty printable set. 
+   *
+   * @return
+   *   String
+   */
+  virtual std::string Str(void) const {return TBaseSet<Idx>::Str(); };
 
  protected:
 
@@ -192,8 +204,6 @@ public:
    *
    * @param rSource 
    *    Source to copy from
-   * @return
-   *    Ref to this set
    */
   void DoAssign(const IndexSet& rSource);
 
@@ -243,6 +253,21 @@ public:
    */
   virtual void DoXWrite(TokenWriter& tw, const std::string& rLabel="", const Type* pContext=0) const;
 
+  /** 
+   * Token output for an individual element of the set, strict debug variant. See also
+   * DoWriteElement
+   *
+   * @param rTw
+   *   Reference to TokenWriter
+   * @param rElem
+   *   The element to write
+   * @param rLabel
+   *   Label of section to write, defaults to ElemenTag
+   * @param pContext
+   *   Write context to provide contextual information
+   */
+  virtual void DoDWriteElement(TokenWriter& rTw, const Idx& rElem, const std::string &rLabel="", const Type* pContext=0) const;
+
   /**
    * Read from TokenReader, see Type::Read for public wrappers. 
    * This method invokes TokenReader::ReadBegin() to seek the specified
@@ -272,10 +297,11 @@ typedef IndexSet StateSet;
 
 
 /** 
- * Convenience typedef for vectors og generators
+ * Convenience typedef for vectors of indexsets
  * \ingroup GeneratorClasses
  */
 typedef  TBaseVector<IndexSet> IndexSetVector;  
+typedef  TBaseVector<StateSet> StateSetVector;  
 
 
 /**
@@ -313,11 +339,16 @@ typedef  TBaseVector<IndexSet> IndexSetVector;
 
 
 template<class Attr>
-class FAUDES_API TaIndexSet : public IndexSet, public TAttrMap<Idx,Attr> {
-
-FAUDES_TYPE_TDECLARATION(Void,TaIndexSet,IndexSet)
+class FAUDES_TAPI TaIndexSet : public IndexSet, public TAttrMap<Idx,Attr> {
 
 public:
+
+  FAUDES_TYPE_TDECLARATION(Void,TaIndexSet,IndexSet)
+
+  using IndexSet::operator=;
+  using IndexSet::operator==;
+  using IndexSet::operator!=;
+
 
   /** 
    * We implement "protected privacy for template classes" by friendship.
@@ -538,20 +569,17 @@ public:
    *
    * @param rSource 
    *    Source to copy from
-   * @return
-   *    Ref to this set
    */
   void DoAssign(const TaIndexSet& rSource);
 
 
 };
 
-/** Convenience Macro */
-//template<class Attr> typedef TaStateSet<class Attr> TaIndexSet<class Attr>
-#define TaStateSet TaIndexSet
-
-
-
+/** Convenience Macro (pre C++11) */
+//#define TaStateSet TaIndexSet  //
+/** Convenience Typedef (C++11) */
+template <class Attr> using TaStateSet = TaIndexSet<Attr>;
+ 
 
 /** @} doxygen group */
 

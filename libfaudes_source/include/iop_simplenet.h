@@ -3,7 +3,7 @@
 /* 
    FAU Discrete Event Systems Library (libfaudes)
 
-   Copyright (C) 2008, Thomas Moor
+   Copyright (C) 2008, 2024 Thomas Moor
    Exclusive copyright is granted to Klaus Schmidt
 
 */
@@ -114,8 +114,6 @@ protected:
    *
    * @param rSrcAttr
    *   Source to copy from
-   * @return
-   *   Ref to this attribute
    */
   void DoAssign(const AttributeSimplenetOutput& rSrcAttr) 
   {(void) rSrcAttr;};
@@ -191,8 +189,6 @@ protected:
    *
    * @param rSrcAttr
    *   Source to copy from
-   * @return
-   *   Ref to this attribute
    */
   void DoAssign(const AttributeSimplenetInput& rSrcAttr) 
   {(void) rSrcAttr;};
@@ -343,7 +339,7 @@ protected:
  * </tr>
  * <tr>
  * <td> <tt>\<Subscribe\> Ev_1 ... Ev_N  \</Subscribe\></tt> </td>
- * <td> subset of available events (e.g. \<Subscribed\> Ev_2 Ev_7 Ev_9  \</Subscribes\></tt>)</td>
+ * <td> subset of available events (e.g. <tt>\<Subscribed\> Ev_2 Ev_7 Ev_9  \</Subscribed\></tt>)</td>
  * </tr>
  * </table>
  *

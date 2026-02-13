@@ -1,59 +1,80 @@
-/** @file cfl_conflequiv.cpp
-
-Abstractions that maintaine conflict-equivalence.
-
-*/
-
 /* FAU Discrete Event Systems Library (libfaudes)
 
-Copyright (C) 2015  Michael Meyer and Thomnas Moor.
-Exclusive copyright is granted to Klaus Schmidt
+   Copyright (C) 2015  Michael Meyer, Thomnas Moor.
+   Copyright (C) 2021,2023  Yiheng Tang, Thomnas Moor.
+   Exclusive copyright is granted to Klaus Schmidt
 
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
 
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
 
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
-  
 #include "cfl_conflequiv.h"
-#include "cfl_bisimulation.h"
-#include "cfl_graphfncts.h"
-#include "cfl_parallel.h"
+#include "cfl_bisimcta.h"
 #include "cfl_regular.h"
+#include "cfl_graphfncts.h"
 
 
-/* 
-The functions in this file implement automata transformations 
-as proposed by Malik R and Flordal H in "Compositional verification in supervisory 
-control", SIAM Journal of Control and Optimization, 2009. The implementation at hand
-is based on the Bachelor Thesis Project of Michael Meyer, Friedrich-Alexander Universitaet 
-Erlangen-Nuernberg, 2015.
-
-The current status is still experimental. The individual rules are implemented,
-for further testing and optimisation. The code so far does not use  
-any advanced heuristics to apply the transformations is a strategic order. 
-*/
+/** Two debug levels for functions in this source file **/
+//#define FAUDES_DEBUG_COMPVER0
+//#define FAUDES_DEBUG_COMPVER1
+#ifdef FAUDES_DEBUG_COMPVER0
+#define FD_CV0(message) FAUDES_WRITE_CONSOLE("FAUDES_CONFEQ: "  << message)
+#else
+#define FD_CV0(message)
+#endif
+#ifdef FAUDES_DEBUG_COMPVER1
+#define FD_CV1(message) FAUDES_WRITE_CONSOLE("FAUDES_CONFEQ: "  << message)
+#else
+#define FD_CV1(message)
+#endif
 
 
 namespace faudes {
 
 
+
+// insert manually omega event for given automaton
+// YT: it has also been considered that to use a omega-selfloop over all
+// marked states. This is not functionally harmful. However, this will enlarge
+// the set of incoming transitions for marked states, and thus will make many
+// partitions unnecesaritly finer, e.g. those incoming-eq-based paritions and
+// only silent incoming rules.
+void AppendOmegaTermination(Generator& rGen){
+    if (rGen.ExistsEvent("_OMEGA_")||rGen.ExistsEvent("_OMEGA_TERMINAL_")||rGen.ExistsState("_TERMINAL_")){
+        throw Exception("AppendOmegaTermination", "please don't use event names _OMEGA_, _OMEGA_TERMINAL_ and state name _TERMINAL_", 100);
+    }
+    Idx omega = rGen.InsEvent("_OMEGA_");
+    Idx terminal = rGen.InsState("_TERMINAL_"); // this will be marked later on
+    StateSet::Iterator sit = rGen.MarkedStatesBegin();
+    for(;sit!=rGen.MarkedStatesEnd();sit++){ // each marked state has a omega trans to terminal
+        rGen.SetTransition(*sit,omega,terminal);
+    }
+    rGen.SetMarkedState(terminal);
+    Idx omega_terminal = rGen.InsEvent("_OMEGA_TERMINAL_");
+    rGen.SetTransition(terminal,omega_terminal,terminal); // need a special selfloop for terminal state, so that partition will always separate it
+}
+
+// Convenience typedef for incoming transsitions to a given state (or set of states).
+// Since we know the target state X2 from the context, we only record X1 and Ev to
+// experience better performance
+typedef std::set<std::pair<Idx,Idx>> SetX1Ev;
+
 // Merge equivalent classes, i.e. perform quotient abstraction
 // (this implementation works fine with a small amount of small equiv classes)
 void MergeEquivalenceClasses(
-  Generator& rGen, 
-  TransSetX2EvX1& rRevTrans,
-  const std::list< StateSet >& rClasses
-) 
+			     Generator& rGen,
+			     TransSetX2EvX1& rRevTrans,
+			     const std::list< StateSet >& rClasses)
 {
   // iterators
   StateSet::Iterator sit;
@@ -69,509 +90,282 @@ void MergeEquivalenceClasses(
   for(;qit!=rClasses.end();++qit) {
     sit=qit->Begin();
     sit_end=qit->End();
-    Idx q1=*(sit++);
+    Idx q1=*(sit++); // this than denotes the name of quotient, i.e.[q1]
     for(;sit!=sit_end;++sit){
       Idx q2=*sit;
       // merge outgoing transitions form q2 to q1
       tit = rGen.TransRelBegin(q2);
       tit_end = rGen.TransRelEnd(q2);
-      for(;tit!=tit_end;++tit) { 
-	 rGen.SetTransition(q1,tit->Ev,tit->X2);
-	 rRevTrans.Insert(q1,tit->Ev,tit->X2);   
+      for(;tit!=tit_end;++tit) {
+        rGen.SetTransition(q1,tit->Ev,tit->X2);
+        rRevTrans.Insert(q1,tit->Ev,tit->X2);
       }
       // merge incomming transitions form q2 to q1
       rit = rRevTrans.BeginByX2(q2);
       rit_end = rRevTrans.EndByX2(q2);
-      for(;rit!=rit_end;++rit) { 
-	rGen.SetTransition(rit->X1,rit->Ev,q1);
+      for(;rit!=rit_end;++rit) {
+        rGen.SetTransition(rit->X1,rit->Ev,q1);
         rRevTrans.Insert(rit->X1,rit->Ev,q1);
       }
-      // fix marking: if q2 was not marked, need to un-mark q1 (original by Michael Meyer)
-      //if(!(rGen.ExistsMarkedState(q2)))
-      //  rGen.ClrMarkedState(q1);
-      // fix marking: if q2 was marked, so becomes  q1 (quatient by the books)
       if(rGen.ExistsMarkedState(q2))
         rGen.InsMarkedState(q1);
-      // fix initial states: if q2 was initial, so becomes q1
       if((rGen.ExistsInitState(q2)))
         rGen.InsInitState(q1);
-      // log for delete
       delstates.Insert(q2);
     }
   }
   // do delete
   rGen.DelStates(delstates);
-  // optional: delete stes in rec transrel --- otherwise it is now invalid
 }
 
 
-
-// Compute extended transition relation '=>', i.e. relate each two states that 
-// can be reached by one non-slilent event and an arbitrary amount of silent 
-// events befor/after the non-silent event
-//
-// Note: currently all silent events are treated equivalent, as if they
-// had been substituted by a single silent event "tau"; we should perform
-// this substitution beforehand.
-// Note: the below fixpoint iteration is simple but perhaps suboptimal; can a
-// todostack perform better? See also the varuious implementations of ProjectNonDet
-
-void ExtendedTransRel(const Generator& rGen, const EventSet& rSilentAlphabet, TransSet& rXTrans) {
-
-  // HELPERS:
-  TransSet::Iterator tit1;
-  TransSet::Iterator tit1_end;
-  TransSet::Iterator tit2;
-  TransSet::Iterator tit2_end;
-  TransSet newtrans;
-
-  // initialize result with original transitionrelation
-  rXTrans=rGen.TransRel();
-  // loop for fixpoint
-  while(true) {
-    // accumulate new transitions
-    newtrans.Clear();
-    // loop over all transitions
-    tit1=rXTrans.Begin();
-    tit1_end=rXTrans.End();
-    for(;tit1!=tit1_end; ++tit1) {
-       // if it is silent add transition to non silent successor directly
-       if(rSilentAlphabet.Exists(tit1->Ev)) {
-         tit2=rXTrans.Begin(tit1->X2);
-         tit2_end=rXTrans.End(tit1->X2);
-         for(;tit2!=tit2_end; ++tit2) {
-           if(!rSilentAlphabet.Exists(tit2->Ev)) // tmoor 18-09-2019
-             newtrans.Insert(tit1->X1,tit2->Ev,tit2->X2);
-         }
-       }
-       // if it is not silent add transition to silent successor directly
-       else {
-         tit2=rXTrans.Begin(tit1->X2);
-         tit2_end=rXTrans.End(tit1->X2);
-         for(;tit2!=tit2_end; ++tit2) {
-           if(rSilentAlphabet.Exists(tit2->Ev)) 
-	     newtrans.Insert(tit1->X1,tit1->Ev,tit2->X2);
-         }
-       }
-    }
-    // insert new transitions, break on fixpoint
-    Idx tsz=rXTrans.Size();
-    rXTrans.InsertSet(newtrans);
-    if(tsz==rXTrans.Size()) break;
-  }
-}
-
-
-// Performs observation equivalent abstraction; see cited literature 3.1
-// Note: do we need to implement the test on the initial states? 
+// construct observation equivalent quotient
+// in Pilbrow & Malik 2015, the so called "weak observation eq" is introduced which
+// seems to be coarser. However, according to our discussion with Mr. Malik,
+// the quotient cannot be constructed from the original automaton (with tau events),
+// but from the saturated and tau-removed automaton. In various test cases, weak-ob-eq
+// shows worse performance then ob-eq and thus abandoned
 void ObservationEquivalentQuotient(Generator& g, const EventSet& silent){
   FD_DF("ObservationEquivalentQuotient(): prepare for t#"<<g.TransRelSize());
 
-  // have extendend/reverse-ordered transition relations 
+  // have extendend/reverse-ordered transition relations
   TransSetX2EvX1 rtrans;
-  g.TransRel().ReSort(rtrans);
-  TransSet xtrans;
-  ExtendedTransRel(g,silent,xtrans);
-  FD_DF("ObservationEquivalentQuotient(): ext. trans t#"<<xtrans.Size());
-
-  // this was in error --- ytang/tmoor 18-09-2019
-  // remove silent events from extended transition relation
-  // xtrans.RestrictEvents(g.Alphabet()-silent);
-
-  // figure observation equivalent states
-  std::list< StateSet > eqclasses;
-  Generator xg(g);
-  xg.InjectTransRel(xtrans);
-  calcBisimulation(xg,eqclasses);
+  g.TransRel().ReSort(rtrans);  
+  std::list<StateSet> eqclasses;
+  ComputeWeakBisimulationSatCTA(g,silent,eqclasses);
 
   // merge  classes
   FD_DF("ObservationEquivalentQuotient(): merging classes #"<< eqclasses.size());
   MergeEquivalenceClasses(g,rtrans,eqclasses);
- 
+
   FD_DF("ObservationEquivalentQuotient(): done with t#"<<g.TransRelSize());
 }
 
 
+// Compute the incoming non-tau transitions of a state in a saturated
+// and tau-removed generator. Since the target X2 is known, we return
+// a set of pairs {X1,Ev}. Moreover, for the sake of reachability from
+// some intial state, a special pair <0,0> indicates that this state
+// can be silently reached from some initial state. Since IncomingTransSet
+// typically is called within a loop, we require to  pre-compute the reverse
+// transitionrelation
+void IncomingTransSet(
+		      const Generator& rGen,
+		      const TransSetX2EvX1& rRTrans,
+		      const EventSet& silent,
+		      const Idx& state,
+		      SetX1Ev& result){
+  result.clear(); // initialize result
+  std::stack<Idx> todo; // states to process
+  std::set<Idx> visited; // states processed
+  todo.push(state);
+  visited.insert(state);
 
-// Test for incoming equivalence '=_inc' based on reverse ext. transition relation
-bool IsIncomingEquivalent(
-  const TransSetX2EvX1& rRevXTrans, 
-  const EventSet& rSilent, 
-  const StateSet& rInitialStates, 
-  Idx q1, Idx q2) 
-{
-  TransSetX2EvX1::Iterator rit1;
-  TransSetX2EvX1::Iterator rit1_end;
-  TransSetX2EvX1::Iterator rit2;
-  TransSetX2EvX1::Iterator rit2_end;
-  bool nonsilent=true;
-  // condition 1: is reached from same state by the same std event
-  rit1=rRevXTrans.BeginByX2(q1);
-  rit1_end=rRevXTrans.EndByX2(q1);
-  rit2=rRevXTrans.BeginByX2(q2);
-  rit2_end=rRevXTrans.EndByX2(q2);
-  while(true) {
-    // skip silent
-    for(;rit1!=rit1_end;++rit1) if(!rSilent.Exists(rit1->Ev)) break;
-    for(;rit2!=rit2_end;++rit2) if(!rSilent.Exists(rit2->Ev)) break;
-    // sense end of loop
-    if(rit1==rit1_end) break;
-    if(rit2==rit2_end) break;
-    // mismatch
-    if(rit1->X1!=rit2->X1) return false;
-    if(rit1->Ev!=rit2->Ev) return false;
-    nonsilent=true;
-    // increment
-    ++rit1;
-    ++rit2;
-  }
-  // skip silent
-  for(;rit1!=rit1_end;++rit1) if(!rSilent.Exists(rit1->Ev)) break;
-  for(;rit2!=rit2_end;++rit2) if(!rSilent.Exists(rit2->Ev)) break;
-  if(rit1!=rit1_end) return false;
-  if(rit2!=rit2_end) return false;
-  // condition 2: both or neither can be silently reached from an initial state 
-  TransSetX2EvX1::Iterator rit;
-  TransSetX2EvX1::Iterator rit_end;
-  bool ini1=rInitialStates.Exists(q1);
-  if(!ini1) {
-    rit=rRevXTrans.BeginByX2(q1);
-    rit_end=rRevXTrans.EndByX2(q1);
-    for(;rit!=rit_end;++rit) {
-      if(!rSilent.Exists(rit->Ev)) continue;
-      if(rInitialStates.Exists(rit->X1)) {ini1=true; break;}
+  while (!todo.empty()){
+    Idx cstate = todo.top();
+    todo.pop();
+    // a "flag" indicating that this state can be silently reached by
+    // some initial state, see remark at the beginning
+    if (rGen.InitStates().Exists(cstate))
+      result.insert({0,0});
+    TransSetX2EvX1::Iterator rtit = rRTrans.BeginByX2(cstate);
+    TransSetX2EvX1::Iterator rtit_end = rRTrans.EndByX2(cstate);
+    for(;rtit!=rtit_end;rtit++){
+      if (!silent.Exists(rtit->Ev))
+	result.insert({rtit->X1,rtit->Ev});
+      else{
+	if (visited.find(rtit->X1) == visited.end()){
+	  todo.push(rtit->X1);
+	  visited.insert(rtit->X1);
+	}
+      }
     }
-  }
-  bool ini2=rInitialStates.Exists(q2);
-  if(!ini2) {
-    rit=rRevXTrans.BeginByX2(q2);
-    rit_end=rRevXTrans.EndByX2(q2);
-    for(;rit!=rit_end;++rit) {
-      if(!rSilent.Exists(rit->Ev)) continue;
-      if(rInitialStates.Exists(rit->X1)) {ini2=true; break;}
-    }
-  }
-  if(ini1!=ini2) return false;
-  // condition 3: if all incomming are silent, must be reachable from initial state (redundant)
-  if(!nonsilent && !ini1) return false;
-  // all tests passt
-  //FD_DF("IE PASSED");
-  return true;
-}
-
-// Candidates for incomming equivalent states '=_inc'
-// (this is meant as a filter in iterations)
-void IncomingEquivalentCandidates(
-  const TransSet& rXTrans, 
-  const TransSetX2EvX1& rRevXTrans, 
-  const EventSet& rSilent, 
-  const StateSet& rInitialStates, 
-  Idx q1,
-  StateSet& rRes) 
-{
-  // iterators
-  TransSetX2EvX1::Iterator rit;
-  TransSetX2EvX1::Iterator rit_end;
-  TransSet::Iterator tit;
-  TransSet::Iterator tit_end;
-  // prepare result
-  rRes.Clear();
-  // std case: one back and one forth via matching non-silent event
-  bool stdcand=false;
-  rit = rRevXTrans.BeginByX2(q1);
-  rit_end = rRevXTrans.EndByX2(q1);
-  for(;rit!=rit_end;++rit) {
-    if(rSilent.Exists(rit->Ev)) continue;
-    stdcand=true;
-    tit = rXTrans.Begin(rit->X1,rit->Ev);
-    tit_end = rXTrans.End(rit->X1,rit->Ev);
-    for(;tit!=tit_end;++tit) 
-      rRes.Insert(tit->X2);
-  }
-  // bail out if the std condition could be applied
-  if(stdcand) return;
-  // only reachable via silent events from initial state
-  rit = rRevXTrans.BeginByX2(q1);
-  rit_end = rRevXTrans.EndByX2(q1);
-  for(;rit!=rit_end;++rit) {
-    //if(!rSilent.Exists(tit->Ev)) continue; // all silent anyway
-    rRes.Insert(rit->X1);
-  }
-  tit = rXTrans.Begin(q1);
-  tit_end = rXTrans.End(q1);
-  for(;tit!=tit_end;++tit) {
-    if(!rSilent.Exists(tit->Ev)) continue;
-    rRes.Insert(tit->X2);
   }
 }
 
+// compute the non-silent active events of a state of agiven generator.
+// this algo is similar to IncomingTransSet, but we shall notice
+// that IncomingTransSet record the source state as well but here not.
+void ActiveNonTauEvs(
+		     const Generator &rGen,
+		     const EventSet &silent,
+		     const Idx &state,
+		     EventSet &result){
+  result.Clear(); // initialize result
+  std::stack<Idx> todo; // states to process
+  std::set<Idx> visited;
+  todo.push(state);
+  visited.insert(state);
+  while (!todo.empty()){
+    Idx cstate = todo.top();
+    todo.pop();
+    TransSet::Iterator rtit = rGen.TransRelBegin(cstate);
+    TransSet::Iterator rtit_end = rGen.TransRelEnd(cstate);
+    for(;rtit!=rtit_end;rtit++){
+      if (!silent.Exists(rtit->Ev))
+	result.Insert(rtit->Ev);
+      else{
+	if (visited.find(cstate) == visited.end()){
+	  todo.push(rtit->X2);
+	  visited.insert(rtit->X2);
+	}
+      }
+    }
+  }
+}
 
-
-
+// return eq classes of =_inc. Instead of returning list of state sets,
+// this function retunrs a map where the keys are the (source state, (non-tau)event) - pairs
+// and the value of each key is the corresponding eq class. Effectively, the keys are just
+// for efficient internal search of existing classes and will not be utilised in any other
+// functions which requies incoming eq (they will only need the values)
+std::map<SetX1Ev,StateSet> IncomingEquivalentClasses(const Generator& rGen, const EventSet& silent){
+  FD_CV1("-- IncomingEquivalentClasses: candidats");
+  // have reverse transition relation
+  TransSetX2EvX1 rtrans;
+  rGen.TransRel().ReSort(rtrans);
+  //StateSet candidates;  
+  //TransSet::Iterator tit = rGen.StatesBegin();
+  //TransSet::Iterator tit_end = rGen.StatesEnd();
+  // start the incoming equivalence partition
+  StateSet::Iterator sit = rGen.StatesBegin();
+  StateSet::Iterator sit_end = rGen.StatesEnd();
+  // set up a map <incoming transset->class> to fast access incoming transset
+  // of existing classes. This map is only meant to check incoming equivalence.
+  std::map<SetX1Ev,StateSet> incomingeqclasses;
+  std::map<SetX1Ev,StateSet>::iterator mit;
+  for(;sit!=sit_end;sit++){
+    SetX1Ev rec_income;
+    IncomingTransSet(rGen,rtrans,silent,*sit,rec_income);
+    mit = incomingeqclasses.find(rec_income);
+    if (mit != incomingeqclasses.end()){ 
+      mit->second.Insert(*sit);
+    } else {
+      StateSet newclass;
+      newclass.Insert(*sit);
+      incomingeqclasses.insert({rec_income,newclass});
+    }
+  }
+  return incomingeqclasses;
+}
 
 // Active events rule; see cited literature 3.2.1
 // Note: this is a re-write of Michael Meyer's implementation to refer to the
 // ext. transistion relation, as indicated by the literature.
+// YT: And now I have rewritten this again, hopefully for better readability
+// YT: This rule was suggested to be implemented together with enabled continuation rule
+// to avoid computing incoming eq multiple times, see C. Pilbrow and R. Malik 2015. However,
+// since enabled continuation rule requires tau-loop-free automaton and active events rule
+// may generate tau, i have separated them
 void ActiveEventsRule(Generator& g, const EventSet& silent){
-  FD_DF("ActiveEventsRule(): prepare for t#"<<g.TransRelSize());
 
-  // iterators
-  StateSet::Iterator sit1;
-  StateSet::Iterator sit1_end;
-  StateSet::Iterator sit2;
-  StateSet::Iterator sit2_end;
-  TransSet::Iterator tit;
-  TransSet::Iterator tit_end;
-  EventSet::Iterator eit;
-  EventSet::Iterator eit_end;
+  std::map<SetX1Ev,StateSet> incomingeqclasses = IncomingEquivalentClasses(g,silent);
+  std::list<StateSet> eqclasses; // store result
+  TransSetX2EvX1 rtrans; // convenient declaration for MergeEqClasses
 
+  FD_CV1("-- Refine for ActiveEventRule")
+  // iterate
+  std::map<SetX1Ev,StateSet>::iterator mit = incomingeqclasses.begin();
+  for (;mit!=incomingeqclasses.end();mit++){
+    // refine each =_inc class. in each refined class, states shall
+    // have the same set of non-tau active event
+    // in the course of refinement, merged
+    while(mit->second.Size()>1){
+      StateSet fineclass; // refined class
+      StateSet::Iterator sit = mit->second.Begin();
+      fineclass.Insert(*sit);
+      EventSet activeevs;
+      ActiveNonTauEvs(g,silent,*sit,activeevs); // xg: exclude tau
+      StateSet::Iterator sit_compare = sit;
+      sit_compare++; // next state in this =_inc class. compare active non-tau ev with *sit
+      mit->second.Erase(*sit);// delete to avoid duplets
+      while(sit_compare!=mit->second.End()){
+	EventSet activeevs_compare;
+	ActiveNonTauEvs(g,silent,*sit_compare,activeevs_compare);
+	if (activeevs_compare==activeevs){
+	  fineclass.Insert(*sit_compare);
+	  StateSet::Iterator todelete = sit_compare;
+	  sit_compare++;
+	  mit->second.Erase(todelete);
+	}
+	else sit_compare++;
+      }
+      if (fineclass.Size()>1) eqclasses.push_back(fineclass);
+    }
+  }
+  g.TransRel().ReSort(rtrans);
+  MergeEquivalenceClasses(g,rtrans,eqclasses);
+}
 
-  // have extendend/reverse-order transition relations 
+// YT: this is a generalized rule of silent continuation rule, see Pilbrow and Malik 2015.
+// Note this function requires tau-loop free automata.
+void EnabledContinuationRule(Generator &g, const EventSet &silent){
+  std::map<SetX1Ev,StateSet> incomingeqclasses = IncomingEquivalentClasses(g,silent);
+  std::list<StateSet> eqclasses; // store result
+  TransSetX2EvX1 rtrans; // convenient declaration for MergeEqClasses
+  // YT: we only consider states both with active tau. Both with always enabled evs,
+  // as suggested in Pilbrow & Malik, are neglected
+  eqclasses.clear();
+  rtrans.Clear();
+  std::map<SetX1Ev,StateSet>::iterator mit = incomingeqclasses.begin();
+  for (;mit!=incomingeqclasses.end();mit++){
+    StateSet fineclass; // refined class
+    StateSet::Iterator sit = mit->second.Begin();
+    while(sit!=mit->second.End()){
+      if (!(g.ActiveEventSet(*sit) * silent).Empty()){ // g: has outgoing tau
+        fineclass.Insert(*sit);
+        sit++;
+      }
+      else sit++;
+    }
+    if (fineclass.Size()>1) eqclasses.push_back(fineclass);
+  }
+  g.TransRel().ReSort(rtrans);
+  MergeEquivalenceClasses(g,rtrans,eqclasses);
+}
+
+// simple function removing tau self loops
+void RemoveTauSelfloops(Generator &g, const EventSet &silent){
+  TransSet::Iterator tit = g.TransRelBegin();
+  TransSet::Iterator tit_end = g.TransRelEnd();
+  while(tit!=tit_end){
+    if (tit->X1 == tit->X2 && silent.Exists(tit->Ev)) g.ClrTransition(tit++);
+    else tit++;
+  }
+}
+
+// as a special case of observation equivalence, states on a tau-loop are all equivalent
+// and can be merged to a single state. This step is preferred to be done before
+// (weak) observation equivalence, as they require transition saturation which is quite
+// expensive.
+void MergeSilentLoops(Generator &g, const EventSet &silent){
+
   TransSetX2EvX1 rtrans;
   g.TransRel().ReSort(rtrans);
-  TransSet xtrans;
-  ExtendedTransRel(g,silent,xtrans);
-  TransSetX2EvX1 rxtrans;
-  xtrans.ReSort(rxtrans);
-  FD_DF("ActiveEventsRule: ext. trans t#"<<xtrans.Size());
 
-  // record equivalent states
-  std::list< StateSet > eqclasses;
-  StateSet eqclass;
+  // have a generator copy where only silent transitions are preserved
+  Generator copyg(g);
+  TransSet::Iterator tit = copyg.TransRel().Begin();
+  while (tit!=copyg.TransRelEnd()){
+    if (!silent.Exists(tit->Ev)) // if not a silent trans, delete
+      copyg.ClrTransition(tit++);
+    else tit++;
+  }
 
-  // inner loop variables
-  StateSet candidates;
-  EventSet active1;
+  // compute eqclass and merge on original generator
+  std::list<StateSet> eqclasses;
+  StateSet dummy;
+  ComputeScc(copyg,eqclasses,dummy);
 
-  // iterate pairs of states
-  StateSet states=g.States() - g.InitStates(); // todo: deal with initial states
-  sit1=states.Begin();
-  sit1_end=states.End();
-  for(;sit1!=sit1_end;++sit1) {
+  // delete trivial eqclasses (yt: I dont want to hack into the computescc function)
+  std::list<StateSet>::iterator sccit = eqclasses.begin();
+  while (sccit!=eqclasses.end()){
+    if ((*sccit).Size()==1) eqclasses.erase(sccit++);
+    else sccit++;
+  }
 
-    // find candidates for incoming equivalence
-    IncomingEquivalentCandidates(xtrans,rxtrans,silent,g.InitStates(),*sit1,candidates);
-
-    // q1 active events
-    active1=xtrans.ActiveEvents(*sit1) - silent;
-    // prepare set of equivalent states
-    eqclass.Clear();
-
-    // iterate candidates
-    sit2=candidates.Begin();
-    sit2_end=candidates.End();
-    for(;sit2!=sit2_end;++sit2){
-      // skip restriction/dealt with
-      if(!states.Exists(*sit2)) continue;
-      // skip doublets
-      if(*sit2<=*sit1) continue;
-      //FD_DF("ActiveEventsRule: test  "<< *sit1 << " with " << *sit2 );
-      // insist in active standard events to match
-      if(! ( active1 == xtrans.ActiveEvents(*sit2) - silent ) ) continue;
-
-      /*
-      // alternative implementation: makes no difference
-      tit=xtrans.Begin(*sit2);
-      tit_end=xtrans.End(*sit2);
-      eit=active1.Begin();
-      eit_end=active1.End();
-      while(true) {
-        // skip silent
-        for(;tit!=tit_end;++tit) { if(!silent.Exists(tit->Ev)) break;}
-	if(tit==tit_end) break;
-        // sense mismatch
-        if(tit->Ev != *eit) break; 
-        // increment
-	++tit;
-        ++eit;
-        // sense end of loop
-        if(tit==tit_end) break;
-	if(eit==eit_end) break;
-      }
-      for(;tit!=tit_end;++tit) { if(!silent.Exists(tit->Ev)) break;}
-      if(eit!=eit_end) continue;
-      if(tit!=tit_end) continue;        
-      */
-
-      // insist in active events to match, incl w-event, i.e. marking (not needed?)
-      //if(! ( g.ExistsMarkedState(*sit1) == g.ExistsMarkedState(*sit2) ))
-      // continue;
-      //FD_DF("ActiveEventsRule: a-match  "<< *sit1 << " with " << *sit2 );
-      // test incomming equivalence
-      if(! IsIncomingEquivalent(rxtrans,silent,g.InitStates(),*sit1,*sit2))
-	 continue;
-      //FD_DF("ActiveEventsRule: record merge  "<< *sit1 << " with " << *sit2 );
-      eqclass.Insert(*sit2);
-      states.Erase(*sit2);
-    }
-    // record non-trivial equaivalence class
-    if(eqclass.Size()>0){
-      eqclass.Insert(*sit1);
-      eqclasses.push_back(eqclass);
-    }
-
-  } // end: loop pais of states
-
-  // iterate over all classes of equivalent states and merge
-  FD_DF("ActiveEventsRule: merging classes #"<< eqclasses.size());
   MergeEquivalenceClasses(g,rtrans,eqclasses);
- 
-  FD_DF("ActiveEventsRule: done with t#"<<g.TransRelSize());
 }
-
-
-// Silent continuation rule; see cited literature 3.2.2
-// Note: this is a rewrite of Michael Meyer's implementation to refer to the
-// ext. transistion relation, as indicated by the literature.
-// Note: assumes that silent SCCs have been eliminated before; see lit. Corollary 1, and MergeSilentSccs()
-void SilentContinuationRule(Generator& g, const EventSet& silent){
-  FD_DF("SilentContinuationRule(): prepare for t#"<<g.TransRelSize());
-
-  // iterators
-  StateSet::Iterator sit1;
-  StateSet::Iterator sit1_end;
-  StateSet::Iterator sit2;
-  StateSet::Iterator sit2_end;
-
-  // have extendend/reverse-ordered transition relations 
-  TransSet xtrans;
-  TransSetX2EvX1 rxtrans;
-  TransSetX2EvX1 rtrans;
-  ExtendedTransRel(g,silent,xtrans);
-  xtrans.ReSort(rxtrans);
-  g.TransRel().ReSort(rtrans);
-
-  // record equivalent states
-  std::list< StateSet > eqclasses;
-  StateSet eqclass;
-
-  // loop variables
-  StateSet candidates;
-
-  // iterate pairs of states
-  StateSet states=g.States() - g.InitStates(); // todo: deal with initial states
-  sit1=states.Begin();
-  sit1_end=states.End();
-  for(;sit1!=sit1_end;++sit1) {
-
-    // must have at least one silent event enabled
-    if((g.ActiveEventSet(*sit1)*silent).Size()==0) continue;
-
-    // find candidates for incoming equivalence
-    IncomingEquivalentCandidates(xtrans,rxtrans,silent,g.InitStates(),*sit1,candidates);
-    if(candidates.Empty()) continue;
-
-    // iterate candidates
-    eqclass.Clear();
-    sit2=candidates.Begin();
-    sit2_end=candidates.End();
-    for(;sit2!=sit2_end;++sit2){
-      // skip restriction/dealt with
-      if(!states.Exists(*sit2)) continue;
-      // skip doublets
-      if(*sit2<=*sit1) continue;
-
-      // must have at least one silent event enabled
-      if((g.ActiveEventSet(*sit2)*silent).Size()<=0)
-        continue;
-      
-      //FD_DF("SilentContinuationRule: test  "<< *sit1 << " with " << *sit2 );
- 
-      // test incoming equivalence
-      if(! IsIncomingEquivalent(rxtrans,silent,g.InitStates(),*sit1,*sit2))
-	 continue;
-      // record to merge
-      //FD_DF("SilentContuationRule: record to merge  "<< *sit1 << " with " << *sit2 );
-      eqclass.Insert(*sit2);
-      states.Erase(*sit2);
-    }
-
-    // record equaivalent states
-    if(eqclass.Size()>0){
-       eqclass.Insert(*sit1);
-       eqclasses.push_back(eqclass);
-    }
-
-  } // end: loop pais of states
-
-  // iterate over all classes of equivalent states and merge
-  FD_DF("SilentContinuationRule(): merging classes #"<< eqclasses.size());
-  MergeEquivalenceClasses(g,rtrans,eqclasses);
- 
-  FD_DF("SilentContinuationRule(): done with t#"<<g.TransRelSize());
-}
-
-
-// Represent each silent SCC by one state and remove respective silent events.
-// This transformation is observation equivalent and, hence, conflict equivalent (reference [19] in cited literature)
-// The current implementation is based on Michael Meyer's with some additional performance considerations.
-void MergeSilentSccs(Generator& g, const EventSet& silent){
-  FD_DF("MergeSilentSccs(): prepare for t#"<<g.TransRelSize());
-  StateSet delstates;
-  TransSet::Iterator tit;
-  TransSet::Iterator tit_end;
-  StateSet::Iterator sit;
-  StateSet::Iterator sit_end;
-  // remove silent selfloops
-  tit=g.TransRelBegin();
-  tit_end=g.TransRelEnd();
-  for(;tit!=tit_end;){
-    if(tit->X1 == tit->X2)
-      if(silent.Exists(tit->Ev)) {
-        g.ClrTransition(tit++);
-        continue;
-      }
-    ++tit;
-  }
-  // find silent SCCs
-  EventSet avoid=g.Alphabet()-silent;
-  SccFilter filter(SccFilter::FmEventsAvoid || SccFilter::FmIgnoreTrivial, avoid);
-  StateSet sccroots;
-  std::list< StateSet > scclist;
-  ComputeScc(g,filter,scclist,sccroots);
-  // set up state rename map
-  std::map< Idx , Idx > sccxmap;
-  while(!scclist.empty()) {
-    const StateSet& scc=scclist.front();
-    if(scc.Size()<=1) { scclist.pop_front(); continue;}
-    // have new state to represent scc
-    Idx newSt = g.InsState();
-    // set marking status
-    if( (scc * g.MarkedStates()).Size()>0 )
-      g.SetMarkedState(newSt);
-    // set initial status
-    if( (scc * g.InitStates()).Size()>0 )
-      g.SetInitState(newSt);
-    // add to map 
-    sit=scc.Begin();
-    sit_end=scc.End();
-    for(;sit!=sit_end;++sit) 
-      sccxmap[*sit]=newSt;
-    // add to delstates
-    delstates.InsertSet(scc); 
-    //remove from list
-    scclist.pop_front();
-  }
-  // apply substitution
-  if(sccxmap.size()>0){
-    std::map<Idx,Idx>::iterator xit1;
-    std::map<Idx,Idx>::iterator xit2;
-    tit=g.TransRelBegin(); 
-    while(tit!=g.TransRelEnd()) {
-      Transition t= *tit;
-      g.ClrTransition(tit++);
-      xit1=sccxmap.find(t.X1);
-      xit2=sccxmap.find(t.X2);
-      if(xit1!=sccxmap.end()) t.X1=xit1->second;
-      if(xit2!=sccxmap.end()) t.X2=xit2->second;
-      g.SetTransition(t);
-    }
-  }
-  // delete scc states
-  g.DelStates(delstates);
-  FD_DF("MergeSilentSccs(): done with t#"<<g.TransRelSize());
-}
-
 
 // Certain conflicts. see cited literature 3.2.3
 // -- remove outgoing transitions from not coaccessible states
@@ -582,15 +376,13 @@ void RemoveNonCoaccessibleOut(Generator& g){
   for(;sit!=sit_end;++sit){
     TransSetX1EvX2::Iterator tit=g.TransRelBegin(*sit);
     TransSetX1EvX2::Iterator tit_end=g.TransRelEnd(*sit);
-    for(;tit!=tit_end;) g.ClrTransition(tit++);  
+    for(;tit!=tit_end;) g.ClrTransition(tit++);
     //FD_DF("RemoveCertainConflictA: remove outgoing from state "<<*sit);
   }
 }
 
-
-
 // Certain conflicts. see cited literature 3.2.3
-// -- remove outgoing transitions from states that block by a silent event 
+// -- remove outgoing transitions from states that block by a silent event
 void BlockingSilentEvent(Generator& g,const EventSet& silent){
   FD_DF("BlockingSilentEvent(): prepare for t#"<<g.TransRelSize());
   StateSet coacc=g.CoaccessibleSet();
@@ -602,9 +394,9 @@ void BlockingSilentEvent(Generator& g,const EventSet& silent){
   // loop all transitions to figure certain blocking states
   tit=g.TransRelBegin();
   tit_end=g.TransRelEnd();
-  for(;tit!=tit_end;++tit) { 
-    if(silent.Exists(tit->Ev)) 
-      if(!coacc.Exists(tit->X2)) 
+  for(;tit!=tit_end;++tit) {
+    if(silent.Exists(tit->Ev))
+      if(!coacc.Exists(tit->X2))
         sblock.Insert(tit->X1);
   }
   // unmark blocking states and eliminate possible future
@@ -614,13 +406,11 @@ void BlockingSilentEvent(Generator& g,const EventSet& silent){
     g.ClrMarkedState(*sit);
     tit=g.TransRelBegin(*sit);
     tit_end=g.TransRelEnd(*sit);
-    for(;tit!=tit_end;) 
+    for(;tit!=tit_end;)
       g.ClrTransition(tit++);
   }
   FD_DF("BlockingSilentEvent(): done with t#"<<g.TransRelSize());
 }
-
-
 
 // Certain conflicts. see cited literature 3.2.3
 // -- merge all states that block to one representative
@@ -637,249 +427,294 @@ void MergeNonCoaccessible(Generator& g){
   TransSet::Iterator tit=g.TransRelBegin();
   TransSet::Iterator tit_end=g.TransRelEnd();
   for(;tit!=tit_end;++tit){
-    if(notcoacc.Exists(tit->X2))	
+    if(notcoacc.Exists(tit->X2))
       g.SetTransition(tit->X1,tit->Ev,qnc);
   }
-  // delete original not coacc 
+  // delete original not coacc
   g.DelStates(notcoacc);
 }
-
-// Certain conflicts. see cited literature 3.2.3
-// -- if a transition blocks, remove all transitions from the same state with the same label
-void BlockingEvent(Generator& g,const EventSet& silent){
-  FD_DF("BlockingEvent(): prepare for t#"<<g.TransRelSize());
-  StateSet coacc=g.CoaccessibleSet();
-  TransSet::Iterator tit;
-  TransSet::Iterator tit_end;
-  TransSet::Iterator dit;
-  TransSet::Iterator dit_end;
-  TransSet deltrans;
-  // loop all transitions to figure transitions to blocking states
-  tit=g.TransRelBegin();
-  tit_end=g.TransRelEnd();
-  for(;tit!=tit_end;++tit) { 
-    // silent events are treated by a separat rule;
-    if(silent.Exists(tit->Ev)) continue;
-    // look for transitions that block
-    if(coacc.Exists(tit->X1)) continue;
-    if(coacc.Exists(tit->X2)) continue;
-    // consider all transitions with the same event to block
-    dit=g.TransRelBegin(tit->X1,tit->Ev);
-    dit_end=g.TransRelEnd(tit->X1,tit->Ev); 
-    for(;dit!=dit_end;++dit) {
-      // keep selfloops (Michael Meyer)
-      if(dit->X1==dit->X2) continue;
-      // rcord to delete later
-      deltrans.Insert(*dit); 
-    }
-  }
-  // delete transitions
-  dit=deltrans.Begin();
-  dit_end=deltrans.End();
-  for(;dit!=dit_end;++dit) 
-    g.ClrTransition(*dit);
-  FD_DF("BlockingEvent(): done with t#"<<g.TransRelSize());
-}
-
 
 
 // Only silent incomming rule; see cited literature 3.2.4
 // Note: input generator must be silent-SCC-free
-// Note: this is a complete re-write and needs testing for more than one candidates
+// Note: this is a complete re-re-write and needs testing for more than one candidates
 void OnlySilentIncoming(Generator& g, const EventSet& silent){
-  FD_DF("OnlySilentIncoming(): prepare with t#"<<g.TransRelSize());
-
-  TransSet::Iterator tit;
-  TransSet::Iterator tit_end;
-  TransSet::Iterator dit;
-  TransSet::Iterator dit_end;
-  StateSet::Iterator sit;
-  StateSet::Iterator sit_end;
 
   // figure states with only silent incomming transitions
-  // note: Michael Meyer proposed to only consider states with at least two incomming 
+  // note: Michael Meyer proposed to only consider states with at least two incomming
   // events -- this was dropped in the re-write
-  StateSet cand=g.States(); // - g.InitStates();
-  tit=g.TransRelBegin();
-  tit_end=g.TransRelEnd();
-  for(;tit!=tit_end;++tit) 
-    if(!silent.Exists(tit->Ev)) cand.Erase(tit->X2); 
+  StateSet cand=g.States()-g.InitStates(); // note the initial state set is preserved
+  TransSet::Iterator tit = g.TransRelBegin();
+  TransSet::Iterator tit_end = g.TransRelEnd();  
+  for(;tit!=tit_end;++tit)
+    if(!silent.Exists(tit->Ev)) cand.Erase(tit->X2);
 
   // bail out on trivial
-  if(cand.Size()==0) return;
+  if(cand.Size()==0) {
+    return;
+  }
 
-  // restrict candidates to "if marked, then have at least one non-self-loop silent outgoing transition"
-  /*
-  sit=cand.Begin();
-  sit_end=cand.End();
-  while(sit!=sit_end) {
-    if(!g.ExistsMarkedState(*sit)) { ++sit; continue;}
-    tit=g.TransRelBegin(*sit);
-    tit_end=g.TransRelEnd(*sit);
-    for(;tit!=tit_end;++tit) {   
-      if(silent.Exists(tit->Ev) && (tit->X2!=*sit)) break;
+  StateSet::Iterator sit = cand.Begin();
+  StateSet::Iterator sit_end = cand.End();
+  while (sit!=sit_end){
+    TransSet::Iterator tit2 = g.TransRelBegin(*sit);
+    TransSet::Iterator tit2_end = g.TransRelEnd(*sit);
+    for (;tit2!=tit2_end;tit2++){
+      if (silent.Exists(tit2->Ev)){
+        break;
+      }
     }
-    if(tit!=tit_end) ++sit;
-    else cand.Erase(sit++);
-  }
-  */
 
-  // current code cannot handle multiple successive only-silent-incomming states 
-  sit=cand.Begin();
-  sit_end=cand.End();
-  for(;sit!=sit_end;) {
-    tit=g.TransRelBegin(*sit);
-    tit_end=g.TransRelEnd(*sit);
-    for(;tit!=tit_end;++tit)    
-      if(cand.Exists(tit->X2)) break;
-    if(tit==tit_end) ++sit;
-    else cand.Erase(sit++);  
-  }
-
-  // bail out on trivial
-  if(cand.Size()==0) return;
- 
-  // re-link outgoing transitions to predecessor
-  // note: see the attempt we did for marking? this does not work
-  // and is one reason why one insists in one silent outgoing event
-  tit=g.TransRelBegin();
-  tit_end=g.TransRelEnd();
-  for(;tit!=tit_end;) {
-    if(!cand.Exists(tit->X2))  {++tit; continue; }
-    if(tit->X1==tit->X2)       {++tit; continue; } // self loop (cannot happen since silent-SCC-free)
-    //bool marked = g.ExistsMarkedState(tit->X2);
-    dit=g.TransRelBegin(tit->X2);
-    dit_end=g.TransRelEnd(tit->X2);
-    for(;dit!=dit_end;++dit) {
-      g.SetTransition(tit->X1,dit->Ev,dit->X2);
-      //if(!marked) g.ClrMarkedState(tit->X1);
+    if (tit2!=tit2_end) { // there is at least one tau outgoing
+      // redirect transitions
+      TransSetX2EvX1 rtrans;
+      g.TransRel().ReSort(rtrans);
+      TransSetX2EvX1::Iterator rtit = rtrans.BeginByX2(*sit);
+      TransSetX2EvX1::Iterator rtit_end = rtrans.EndByX2(*sit);
+      for(;rtit!=rtit_end;rtit++){
+        if (g.ExistsMarkedState(*sit)){ // mark predecessor if the state to remove is marked
+          g.SetMarkedState(rtit->X1);
+        }
+        TransSet::Iterator tit3 = g.TransRelBegin(*sit);
+        TransSet::Iterator tit3_end = g.TransRelEnd(*sit);
+        for (;tit3!=tit3_end;tit3++){
+          g.SetTransition(rtit->X1,tit3->Ev,tit3->X2);
+        }
+      }
+      StateSet::Iterator todelete = sit++;
+      g.DelState(*todelete);
     }
-    g.ClrTransition(tit++);  
+    else sit++;
   }
-  
-  // make accessible
-  g.Accessible();
-  FD_DF("OnlySilentIncoming(): done with t#"<<g.TransRelSize());
+  // remark: with this implementation, incoming events (incl. tau) will not be changed
+  // through state removal. A candidate state in "cand" will always be a legit candidate
 }
 
 
 // Only silent outgoing rule; see cited literature 3.2.5
 // Note: input generator must be silent-SCC-free
 void OnlySilentOutgoing(Generator& g,const EventSet& silent){
-  FD_DF("OnlySilentOutgoing(): prepare for t#"<<g.TransRelSize());
-  TransSet::Iterator tit;
-  TransSet::Iterator tit_end;
-  TransSet::Iterator dit;
-  TransSet::Iterator dit_end;
-  StateSet::Iterator sit;
-  StateSet::Iterator sit_end;
-  TransSetX2EvX1 rtrans;
-  TransSetX2EvX1::Iterator rit;
-  TransSetX2EvX1::Iterator rit_end;
+  StateSet::Iterator sit = g.StatesBegin();
+  StateSet::Iterator sit_end = g.StatesEnd();
+  while(sit!=sit_end){
+    // figure out whether this state is only silent outgoing
+    if (g.MarkedStates().Exists(*sit)) {sit++;continue;}
+    TransSet::Iterator tit2 = g.TransRelBegin(*sit);
+    TransSet::Iterator tit2_end = g.TransRelEnd(*sit);
+    if (tit2==tit2_end) {sit++;continue;} // sit points to a deadend state (nonmarked state without outgoing trans)
+    for (;tit2!=tit2_end;tit2++){
+      if (!silent.Exists(tit2->Ev)) break;
+    }
+    if (tit2 != tit2_end) {sit++;continue;} // sit has non-silent outgoing trans
 
-  // figure states with only silent outgoing transitions (cannot handle initial states correctly)
-  StateSet cand=g.States() - g.InitStates();
-  tit=g.TransRelBegin();
-  tit_end=g.TransRelEnd();
-  for(;tit!=tit_end;++tit) 
-    if(!silent.Exists(tit->Ev)) cand.Erase(tit->X1);
-
-
-  // insist in at least one outgoing transition
-  // (since we are silent-SCC-free, this will not be a self-loop)
-  sit=cand.Begin();
-  sit_end=cand.End();
-  for(;sit!=sit_end;) {
-    tit=g.TransRelBegin(*sit);
-    tit_end=g.TransRelEnd(*sit);
-    if(tit!=tit_end) ++sit;
-    else cand.Erase(sit++);  
-  }
-				     
-
-  // current code cannot handle multiple successive only-silent-outgoing states 
-  sit=cand.Begin();
-  sit_end=cand.End();
-  for(;sit!=sit_end;) {
-    tit=g.TransRelBegin(*sit);
-    tit_end=g.TransRelEnd(*sit);
-    for(;tit!=tit_end;++tit)    
-      if(cand.Exists(tit->X2)) break;
-    if(tit==tit_end) ++sit;
-    else cand.Erase(sit++);  
-  }
-
-  // bail out on trivial
-  if(cand.Size()==0) return;
-
-  // re-link outgoing transitions of predecessor
-  tit=g.TransRelBegin();
-  tit_end=g.TransRelEnd();
-  for(;tit!=tit_end;++tit) {
-    if(!cand.Exists(tit->X2)) continue;
-    dit=g.TransRelBegin(tit->X2);
-    dit_end=g.TransRelEnd(tit->X2);
-    for(;dit!=dit_end;++dit) {
-      if(dit->X2==dit->X1) continue; // silent selfloop cannot happen
-      g.SetTransition(tit->X1,tit->Ev,dit->X2);
-    }  
-  }
-
-  // fix initial states
-  sit=cand.Begin();
-  sit_end=cand.End();
-  for(;sit!=sit_end;++sit) 
-    if(g.ExistsInitState(*sit)) 
-      g.InsInitStates(g.SuccessorStates(*sit));
-  
-  // remove candidates
-  g.DelStates(cand); 
-  FD_DF("OnlySilentOutgoing(): done with t#"<<g.TransRelSize());
-}
-  
-
-
-
-
-// apply all of the above repeatedly until a fixpoint is attained
-void ConflictEquivalentAbstraction(vGenerator& rGen, const EventSet& rSilentEvents){
-  FD_DF("ConflictEquivalentAbstraction(): prepare with t#"<<rGen.TransRelSize());
-  while(true) {
-    // track overall gain
-    Idx sz0=rGen.Size();
-    (void) sz0; // make compiler happy
-    // good performance operations: go for fixpoint
-    while(true) {
-      Idx sz1=rGen.Size();
-      FD_WPC(sz0, sz1, "ConflictEquivalentAbstraction: fixpoint iteration states #" << sz1);
-      MergeNonCoaccessible(rGen);
-      if(rSilentEvents.Size()>0){
-        MergeSilentSccs(rGen,rSilentEvents);
-        BlockingSilentEvent(rGen,rSilentEvents); 
-        BlockingEvent(rGen,rSilentEvents);
-        OnlySilentOutgoing(rGen,rSilentEvents); 
-        OnlySilentIncoming(rGen,rSilentEvents);
+    // sit has passed the test. relink outgoing transitions of predecessor
+    TransSetX2EvX1 rtrans;
+    g.TransRel().ReSort(rtrans);
+    // (repair intial state quicker by first iterate outgoing trans)
+    tit2 = g.TransRelBegin(*sit);
+    tit2_end = g.TransRelEnd(*sit);
+    for (;tit2!=tit2_end;tit2++){
+      TransSetX2EvX1::Iterator rtit = rtrans.BeginByX2(*sit); // incoming trans to *sit
+      TransSetX2EvX1::Iterator rtit_end = rtrans.EndByX2(*sit);
+      for (;rtit!=rtit_end;rtit++){
+        g.SetTransition(rtit->X1,rtit->Ev,tit2->X2);
       }
-      if(rGen.Size()==sz1) break;
+      if (g.ExistsInitState(*sit))
+        g.SetInitState(tit2->X2);
     }
-    // break on large automata
-    //if(rGen.TransRelSize()> 50000) break;
-    // badly performing operations: give it a try
-    Idx sz2=rGen.Size();
-    ActiveEventsRule(rGen,rSilentEvents); // can cause tau-scc
-    if(rSilentEvents.Size()>0) {
-      MergeSilentSccs(rGen,rSilentEvents);
-      SilentContinuationRule(rGen,rSilentEvents); // must not have tau-scc
-    }
-    if(rSilentEvents.Size()>0) {
-      ObservationEquivalentQuotient(rGen,rSilentEvents); 
-    }
-    if(rGen.Size()==sz2) break;
-    // break on slow progress
-    //if(rGen.Size()> 1000 && rGen.Size()>0.95*sz0) break;
+    StateSet::Iterator todelete = sit;
+    sit++;
+    g.DelState(*todelete);
   }
+}
+
+EventSet HidePriviateEvs(Generator& rGen, EventSet& silent){
+  EventSet result;
+  EventSet msilentevs=rGen.Alphabet()*silent;
+  if(msilentevs.Empty())
+    return result;
+  Idx tau=*(msilentevs.Begin());
+  result.Insert(*(msilentevs.Begin()));
+  msilentevs.Erase(tau); // from now on, msilentevs exclude tau
+  silent.EraseSet(msilentevs);
+  if (msilentevs.Empty()) // in this case, only one silent event is set to tau and no need to hide
+    return result;
+  TransSet::Iterator tit=rGen.TransRelBegin();
+  TransSet::Iterator tit_end=rGen.TransRelEnd();
+  for(;tit!=tit_end;) {
+    if(!msilentevs.Exists(tit->Ev)) {++tit; continue;}
+    Transition t(tit->X1,tau,tit->X2);
+    rGen.ClrTransition(tit++);
+    if (!rGen.ExistsTransition(t))
+      rGen.SetTransition(t);
+  }
+  rGen.InjectAlphabet(rGen.Alphabet()-msilentevs);
+  return result;
+}
+
+// convenient wrapper for tau-loop removal. Technically, the following algos are
+// very efficient and is suggested to perform prior to other abstraction. Furthermore,
+// input automata being tau-loop free is necessary for the following abstraction rules:
+// - OnlySilentIncoming
+// - OnlySilentOutgoing
+// - EnabledContinuationRule
+// NOTE: currently, ObservationEquivalenceQuotient utilises saturation based algo which does
+// not require tau-loop-free. If
+void RemoveTauLoops(Generator& rGen, const EventSet& silent){
+  MergeSilentLoops(rGen,silent);
+  RemoveTauSelfloops(rGen,silent);
+}
+
+
+// apply all of the above rules once 
+void ConflictEquivalentAbstractionOnce(Generator& rGen, EventSet& silent){
+  // hiding must be performed beforehand.
+  EventSet tau = HidePriviateEvs(rGen, silent);
+
+  // ***************** abstraction rules *******************
+  FD_CV1("Applying only silent incoming rule")
+  RemoveTauLoops(rGen,tau);
+  OnlySilentIncoming(rGen,tau);
+  FD_CV1("Applying only silent outgoing rule")
+  // tau-loop-free is required. Nevertheless, after onlysilentincoming, no tau-loops will emerge
+  OnlySilentOutgoing(rGen,tau);
+  FD_CV1("Applying enabled continuation rule")
+  RemoveTauLoops(rGen,tau);
+  EnabledContinuationRule(rGen,tau);
+  FD_CV1("Applying active events rule")
+  ActiveEventsRule(rGen,tau);
+  FD_CV1("Applying observation eq quotient")
+  ObservationEquivalentQuotient(rGen,tau);
+  FD_CV1("Applying certain conflicts rule")
+  BlockingSilentEvent(rGen,tau);
+  MergeNonCoaccessible(rGen);
   FD_DF("ConflictEquivalentAbstraction(): done with t#"<<rGen.TransRelSize());
 }
+
+// apply all of the above repeatedly until a fixpoint is attained
+void ConflictEquivalentAbstractionLoop(vGenerator& rGen, EventSet& rSilentEvents){
+  Idx sz0=rGen.Size();
+  (void) sz0; // make compiler happy
+  while(true) {
+    Idx sz1=rGen.Size();      
+    FD_CV1("ConflictEquivalentAbstraction(): loop with states #"<<rGen.TransRelSize());
+    FD_WPC(sz0, sz1, "ConflictEquivalentAbstraction: fixpoint iteration states #" << sz1);
+    ConflictEquivalentAbstractionOnce(rGen,rSilentEvents);
+    // break on slow progress
+    //if(rGen.Size()> 1000 && rGen.Size()>0.95*sz1) break;
+    if(rGen.Size()==sz1) break;
+  }
+  FD_CV1("ConflictEquivalentAbstraction(): done with states #"<<rGen.TransRelSize());
+}
+  
+// select variant
+void ConflictEquivalentAbstraction(vGenerator& rGen, EventSet& rSilentEvents){
+  ConflictEquivalentAbstractionOnce(rGen,rSilentEvents);
+  //ConflictEquivalentAbstractionLoop(rGen,rSilentEvents);
+}  
+
+
+// API wrapper  
+bool IsNonconflicting(const GeneratorVector& rGvec) {
+
+  GeneratorVector gvec = rGvec;
+
+  FD_CV0("Appending Omega event")
+    Idx git = 0;
+  for(;git!=gvec.Size();git++){
+    AppendOmegaTermination(gvec.At(git));
+  }
+
+  bool firstCycle = true;
+  while (true){
+    FD_CV0("========================================")
+    FD_CV0("Remaining automata: #"<<gvec.Size())
+
+    // trivial cases
+    if(gvec.Size()==0) return true;
+    if(gvec.Size()==1) break;
+
+    // figure silent events
+    EventSet silent, all, shared;
+    Idx git = 0;
+    while(true){
+      all = all+gvec.At(git).Alphabet();
+      Idx git_next = git+1;
+      if (git_next == gvec.Size()) break;
+      for(;git_next!=gvec.Size();git_next++){
+	shared = shared
+	  + (gvec.At(git).Alphabet())
+	  * (gvec.At(git_next).Alphabet());
+      }
+      git++;
+    }
+    silent=all-shared; // all silent events in all current candidates
+
+    // normalize for one silent event per generator, and then abstract.
+    // note from the second iteration, this is only necessary for the
+    // automaton composed from former candidates. This is realized by
+    // the break at the end
+    git = 0;
+    for(;git!=gvec.Size();git++){
+      // abstraction
+      FD_CV0("Abstracting Automaton "<<gvec.At(git).Name()<<", with state count: "<<gvec.At(git).Size())
+      ConflictEquivalentAbstraction(gvec.At(git), silent);
+      FD_CV0("State count after abstraction: "<<gvec.At(git).Size())
+      if(!firstCycle) break;
+    }
+    firstCycle = false;
+
+    // candidate choice heuritics. Branch by different tasks
+    Idx imin = 0;
+    Idx jmin = 0;
+
+    // candidat with fewest transitions 'minT'
+    git = 1;
+    for(;git!=gvec.Size();git++){
+      if(gvec.At(git).TransRelSize()<gvec.At(imin).TransRelSize())
+	imin = git;
+    }
+    // candidat with most common events 'maxC'
+    git = jmin;
+    Int score=-1;
+    for(; git!=gvec.Size(); git++){
+      if(git==imin) continue;
+      Int sharedsize = (gvec.At(git).Alphabet() * gvec.At(imin).Alphabet()).Size();
+      if ( sharedsize > score){
+	jmin = git;
+	score = sharedsize;
+      }
+    }
+    // compose candidate pair
+    Generator gij;
+    FD_CV0("Composing automata "<<gvec.At(imin).Name()<<" and "<<gvec.At(jmin).Name())
+      Parallel(gvec.At(imin),gvec.At(jmin),gij);
+    GeneratorVector newgvec;
+    newgvec.Append(gij); // the composed generator is always the first element
+    git = 0;
+    for(;git!=gvec.Size();git++){
+      if (git == imin || git == jmin) continue;
+      newgvec.Append(gvec.At(git)); // all other candidates are just copied to the next iteraion
+    }
+    gvec = newgvec;
+  }
+  return IsNonblocking(gvec.At(0));
+}
+
+// API wrapper  
+bool IsNonblocking(const GeneratorVector& rGvec) {
+  return IsNonconflicting(rGvec);
+}
+
+
+} // namespace  
+
+
+
+/*
+earlier revison for inspection
+
+
 
 
 // intentend user interface 
@@ -968,17 +803,15 @@ bool IsNonblocking(const GeneratorVector& rGenVec) {
     }
 
     // candidat pairs with fewest states when composed 'minS'
-    /*
-    Idx jmin=0;
-    Float score=-1;
-    for(i=0;i<gvec.Size();i++){
-      if(i==imin) continue;
-      const Generator& gi=gvec.At(imin);
-      const Generator& gj=gvec.At(i);
-      Int jscore= gi.Size()*gj.Size()/((Float) gi.AlphabetSize()*gj.AlphabetSize()); // rough estimate
-      if(jscore<score || score<0) {score=jscore; jmin=i;}
-    }
-    */
+    //Idx jmin=0;
+    //Float score=-1;
+    //for(i=0;i<gvec.Size();i++){
+    //  if(i==imin) continue;
+    //  const Generator& gi=gvec.At(imin);
+    //  const Generator& gj=gvec.At(i);
+    //  Int jscore= gi.Size()*gj.Size()/((Float) gi.AlphabetSize()*gj.AlphabetSize()); // rough estimate
+    //  if(jscore<score || score<0) {score=jscore; jmin=i;}
+    // }
 
     // compose candidate pair
     Generator& gimin=gvec.At(imin);
@@ -1038,7 +871,6 @@ bool IsNonblocking(const GeneratorVector& rGenVec) {
   return res;
 }
 
+*/
 
 
-
-} // end namespace

@@ -29,7 +29,7 @@
 
 /**
  
-@defgroup SimulatorPlugin Simulator PlugIn
+@defgroup SimulatorPlugin Simulator Plug-In
 
 
 @ingroup AllPlugins
@@ -57,15 +57,13 @@ interactive simulator for the synchronous product of faudes generators.
 </p>
 
 
-@section License
+@subsection SpLicense License
 
 <p>
 The current implementation of the simulator plugin is a re-design based 
 on Ruediger Berndt's and Christoph Doerr's student projects. 
 It is distributed with libFAUDES and under the terms of the LGPL.
 </p>
-<br>
-<br>
 <br>
 
 

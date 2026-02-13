@@ -26,7 +26,7 @@
 #include "cfl_definitions.h"
 
 #include "cfl_platform.h"
-#include "cfl_helper.h"
+#include "cfl_utils.h"
 #include "cfl_exception.h"
 #include "cfl_registry.h"
 #include "cfl_attributes.h"
@@ -45,9 +45,9 @@
 #include "cfl_determin.h"
 #include "cfl_regular.h"
 #include "cfl_statemin.h"
-#include "cfl_omega.h"
 #include "cfl_conflequiv.h"
 #include "cfl_bisimulation.h"
+#include "cfl_bisimcta.h"
 #include "cfl_cgenerator.h"
 
 #endif

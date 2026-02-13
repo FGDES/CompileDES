@@ -24,7 +24,6 @@ Here, hardware IO is implemented by a WAGO IPC.
 Additional third party sources for conveience (other licensing terms may apply)
 
 |./libk20/*                  |support files for K20/Teensy 3.2 boards |                
-|./libwpc/*                  |support files Wago IPC / Kbus drivers   |
 
 
  

@@ -1,12 +1,7 @@
-/** @file cfl_conflequiv.h 
-
-Abstractions that maintaine conflict-equivalence.
-
-*/
-
 /* FAU Discrete Event Systems Library (libfaudes)
 
    Copyright (C) 2015  Michael Meyer and Thomnas Moor.
+   Copyright (C) 2021,2023  Yiheng Tang, Thomas Moor.
    Exclusive copyright is granted to Klaus Schmidt
 
    This library is free software; you can redistribute it and/or
@@ -23,13 +18,11 @@ Abstractions that maintaine conflict-equivalence.
    License along with this library; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
+#ifndef FAUDES_CONFLEQUIV_H
+#define FAUDES_CONFLEQUIV_H
 
-#ifndef FAUDES_CONFEQUIV_H
-#define FAUDES_CONFEQUIV_H
-
-#include "cfl_definitions.h"
 #include "cfl_generator.h"
-
+#include "cfl_basevector.h"
 
 namespace faudes {
 
@@ -39,17 +32,16 @@ namespace faudes {
  * A family of generators is non-blocking, if their parallel composition
  * is non-blocking (all accessible states are co-accessible).
  *
- * This implementation applies a number of conflict equivalent 
+ * This implementation applies a number of conflict equivalent
  * simplifications before finally testing for conflicts in the
- * parallel composition; see also  
- * ConflictEquivalentAbstraction(vGenerator&, const EventSet&)
- * This approach has been originally proposed by R. Malik  and H. Flordal 
- * in "Compositional verification in supervisory 
+ * parallel composition;
+ * This approach has been originally proposed by R. Malik  and H. Flordal
+ * in "Compositional verification in supervisory
  * control", SIAM Journal of Control and Optimization, 2009.
- * 
- * The current implementation is experimental with code based on Michael Meyer's
- * BSc Thesis. 
- * 
+ *
+ * The current implementation is based on Michael Meyer's
+ * BSc Thesis and repaired/optimized by Yiheng Tang
+ *
  *
  * @param rGenVec
  *   Vector of input generators
@@ -58,8 +50,9 @@ namespace faudes {
  *
  * @ingroup GeneratorFunctions
  */
-extern FAUDES_API bool IsNonblocking(const GeneratorVector& rGenVec);
 
+extern FAUDES_API bool IsNonconflicting(const GeneratorVector& rGenVec);
+extern FAUDES_API bool IsNonblocking(const GeneratorVector& rGvec);
 
 /**
  * Conflict equivalent abstraction.
@@ -82,12 +75,32 @@ extern FAUDES_API bool IsNonblocking(const GeneratorVector& rGenVec);
  *
  * @ingroup GeneratorFunctions
  */
-extern FAUDES_API void ConflictEquivalentAbstraction(vGenerator& rGen, const EventSet& rSilentEvents);
+extern FAUDES_API void ConflictEquivalentAbstraction(vGenerator& rGen, EventSet& rSilentEvents);
 
 
 
+/**
+ * Remove all silent loops in a given automaton. This function is considered as an
+ * API not only for its general operational meaning, but most importantly due to the prerequisite for
+ * topological sort.
+ * @param rGen
+ *   input generator
+ * @param silent
+ *   silent alphabet, contains at most one event
+ */
+extern FAUDES_API void RemoveTauLoops(Generator& rGen, const EventSet& silent);
+ 
+/**
+ * Remove outgoing transitions from blocking states.
+ * This is the certain conflicts rule proposed by R. Malik and H. Flordal in "Compositional
+ * verification in supervisory control", SIAM Journal of Control and Optimization, 2009.
+ *
+ * @param rGen
+ *   input/output generator
+ */
+extern FAUDES_API void RemoveNonCoaccessibleOut(vGenerator& rGen);
 
-} // namespace faudes
 
-#endif 
-
+ 
+} // namespace 
+#endif // FAUDES_CONFLEQUIV_H

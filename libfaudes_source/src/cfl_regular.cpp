@@ -234,7 +234,7 @@ bool EmptyLanguageIntersection(const Generator& rGen1, const Generator& rGen2) {
   if( (!g1_det) || (!g2_det)) {
     std::stringstream errstr;
     errstr << "EmptyLanguageIntersection has not been tested for nondeterministic generators";
-    throw Exception("Product", errstr.str(), 201);
+    throw Exception("EmptyLanguageIntersection", errstr.str(), 201);
   }
 
   // Perform product and break when a marking is reached simultaneously)
@@ -276,7 +276,7 @@ bool EmptyLanguageIntersection(const Generator& rGen1, const Generator& rGen2) {
     currentstates = todo.top();
     todo.pop();
     done.insert(currentstates);
-    FD_DF("EmptyLanguageIntersection: processing " << currentstates.first << "|" << currentstates.second);
+    //FD_DF("EmptyLanguageIntersection: processing " << currentstates.first << "|" << currentstates.second);
     // test for sync acceptance (do this here to include initial states)
     if(mark1.Exists(currentstates.first) && mark2.Exists(currentstates.second)) {
        empty=false; 
@@ -336,9 +336,13 @@ bool LanguageDisjoint(const Generator& rGen1, const Generator& rGen2) {
 }
 
 // Automaton(rGen)
-void Automaton(Generator& rGen, const EventSet& rAlphabet) {
+Idx Automaton(Generator& rGen, const EventSet& rAlphabet) {
   FD_DF("Automaton("<< rGen.Name() << "," << rAlphabet.Name() << ")");
     
+  TransSet::Iterator tit;
+  EventSet::Iterator eit;
+  StateSet::Iterator sit;
+
   // for correct result, rGen has to be deterministic!
 #ifdef FAUDES_CHECKED
   if ( !(rGen.IsDeterministic()) ) {
@@ -352,30 +356,32 @@ void Automaton(Generator& rGen, const EventSet& rAlphabet) {
   // extend rGen.Alphabet() by rAlphabet
   rGen.InjectAlphabet(rGen.Alphabet()+rAlphabet);
     
-  // remove states that do not represent prefixes of marked strings
-  rGen.Coaccessible();
+  // we used to trim ... but this will fail for omega automata 
+  // rGen.Trim();
     
   // introduce a dump state (unmarked)
   Idx dump;
-  bool dumpReached=false; // record, whether dump state is indeed used
   if (rGen.StateNamesEnabled()) {
     std::string dumpstr=rGen.UniqueStateName("dump");
     dump = rGen.InsState(dumpstr);
   } else {
     dump = rGen.InsState();
   }
+  for(eit=rGen.AlphabetBegin();eit!=rGen.AlphabetEnd();++eit) 
+    rGen.SetTransition(dump,*eit,dump);
+  bool dumpReached=false; // record, whether dump state is indeed used
 	
   // if there is no initial state, the dump state becomes the initial state
-  // (required for automaton from empty language argument)
   if(rGen.InitStates().Empty()){
     rGen.SetInitState(dump);
     dumpReached=true;
   }
     
-  // introduce transitions to dumpstate
-  StateSet::Iterator sit;
-  EventSet::Iterator eit;
-  for (sit = rGen.StatesBegin(); sit != rGen.StatesEnd(); ++sit) {        
+  // introduce transitions to dumpstate (reference implementation)
+  /*
+  StateSet acc;
+  rGen.AccessibleSet(acc);
+  for (sit = acc.Begin(); sit != acc.End(); ++sit) {        
     for (eit = rGen.Alphabet().Begin(); eit != rGen.Alphabet().End(); ++eit) {
       // If no transition is defined for this state and event, insert respective
       // transition to dump state (note that dump state itself is also treated here
@@ -387,18 +393,99 @@ void Automaton(Generator& rGen, const EventSet& rAlphabet) {
       }
     }        
   }
-    
+  */
+  
+
+  // we can do faster ... but is this worth it?
+  Idx cs=0, ce=0;
+  StateSet acc = rGen.AccessibleSet();
+  sit=acc.Begin();
+  tit=rGen.TransRelBegin();
+  for(;sit!=acc.End();++sit) {
+    FD_DF("Automaton: processing state " << *sit);
+    cs=*sit;
+    // iterrate transrel to find current state cs
+    for(;tit!=rGen.TransRelEnd();++tit) 
+      if(tit->X1 >= cs) break;
+    bool found= false;
+    if(tit!=rGen.TransRelEnd())
+      if(tit->X1 == cs) found=true;
+    // current state not found, so all transitions go to dump
+    if(!found) {
+      FD_DF("Automaton: state not found, all transitions go to dump");
+      for(eit=rGen.AlphabetBegin();eit!=rGen.AlphabetEnd();++eit) 
+        rGen.SetTransition(cs,*eit,dump);
+      if(cs!=dump) dumpReached=true;
+      continue;
+    }
+    // current state found, search for enabled events
+    eit=rGen.AlphabetBegin();
+    while(tit!=rGen.TransRelEnd()) {
+      // event to resolve
+      ce=*eit;
+      FD_DF("Automaton: processing " << tit->Str() << " awaiting " << ce);
+      while(eit!=rGen.AlphabetEnd()) {
+        ce=*eit;
+        if(ce==tit->Ev) break;
+	// add missing transition to dump
+        FD_DF("Automaton: add " << cs << "-(" << ce << ")->dump");
+        rGen.SetTransition(cs,ce,dump);
+        if(cs!=dump) dumpReached=true;
+	// look for next event
+        ++eit;
+      }
+      // all events resolved, go for next state
+      if(eit==rGen.AlphabetEnd()) break;
+      // all events up to ce have been resolved
+      // test whether we have more transitions for the current state
+      bool fin=false;
+      while(tit!=rGen.TransRelEnd()) {
+        ++tit;
+	if(tit==rGen.TransRelEnd()) {fin=true; break;}
+        if(tit->X1!=cs) {fin=true; break;}
+        if(tit->Ev!=ce) break;
+        FD_DF("Automaton: skip " << tit->Str());
+      }
+      // there are more transitions to consider, so resolve the next event
+      if(!fin) {
+         ++eit;
+	 continue;
+      }
+      // we did ran out transitions, so complete this state
+      ++eit;
+      while(eit != rGen.AlphabetEnd()) {
+        FD_DF("Automaton: fin " << cs << "-(" << *eit  << ")->dump");
+        rGen.SetTransition(cs,*eit,dump);
+        if(cs!=dump) dumpReached=true;
+        ++eit;
+      }
+      break;
+    }
+  }
+  
   // if no transition was introduced (except for selfloops), remove dump state
-  if(!dumpReached) 
+  if(!dumpReached) {
     rGen.DelState(dump);
+    dump=0;
+  }
+  
+  return dump;
 }
 
+// API warpper Automaton(rGen,rRes)
+Idx Automaton(const Generator& rGen, Generator& rRes) {
+  FD_DF("Automaton("<< rGen.Name() << ", ...)");
+  rRes=rGen;
+  return Automaton(rRes);
+}
+  
 // Automaton(rGen)
-void Automaton(Generator& rGen) {
+Idx Automaton(Generator& rGen) {
   FD_DF("Automaton("<< rGen.Name() << ")");
   std::string name=rGen.Name();
-  Automaton(rGen,rGen.Alphabet());    
+  Idx ds=Automaton(rGen,rGen.Alphabet());    
   rGen.Name(CollapsString("Automaton(" + name + ")"));
+  return ds;
 }
 
 // LanguageComplement(rGen,rAlphabet)
@@ -410,7 +497,8 @@ void LanguageComplement(Generator& rGen, const EventSet& rAlphabet) {
   
   // convert to automaton (avoiding statename "dump")
   bool stateNamesEnabled=rGen.StateNamesEnabled(); 
-  rGen.StateNamesEnabled(false); 
+  rGen.StateNamesEnabled(false);
+  rGen.Trim();
   Automaton(rGen,rAlphabet);
   rGen.StateNamesEnabled(stateNamesEnabled); 
     
@@ -448,54 +536,54 @@ void LanguageComplement(const Generator& rGen, const EventSet& rSigma, Generator
 
 //LanguageDifference(rGen1, rGen2, rResGen)
 void LanguageDifference(
-   const Generator& rGen1, 
-   const Generator& rGen2,
-   Generator& rResGen) {
+  const Generator& rGen1, 
+  const Generator& rGen2,
+  Generator& rResGen) {
          
-   FD_DF("LanguageDifference("<< rGen1.Name() << "," << rGen2.Name() << ")");
+  FD_DF("LanguageDifference("<< rGen1.Name() << "," << rGen2.Name() << ")");
 
-    // incl. all-empty case
-    if(IsEmptyLanguage(rGen2)) {
-      rResGen.Assign(rGen1);
-      rResGen.Name(CollapsString("LanguageDifference(" + rGen1.Name() + "," + rGen2.Name() + ")"));
-      return;
-    }
-     
-    // use pointer pResGen to result rResGen
-    Generator* pResGen = &rResGen;
-    if(&rResGen == &rGen1 || &rResGen== &rGen2) {
-      pResGen = rResGen.New();
-    }    
-    
-    // due to the use of LanguageComplement(), rGen2 has to be deterministic
-    #ifdef FAUDES_CHECKED
-    if(!(rGen2.IsDeterministic())){
-      std::stringstream errstr;
-      errstr << "Nondeterministic parameter " << rGen2.Name() << ".";
-      throw Exception("LanguageDifference()", errstr.str(), 101);
-    }
-    #endif
-          
-    // prepare result
-    pResGen->Clear();
-     
-    // calculate "Lm1-Lm2" by building the intersection of Lm1 with the complement of Lm2
-    // for correct result, complement has to be computed wrt the alphabet of Lm1 (!)
-        
-    *pResGen=rGen2;
-    LanguageComplement(*pResGen,rGen1.Alphabet());
-    LanguageIntersection(rGen1, *pResGen, *pResGen);
-        
-    FD_DF("LanguageDifference("<< rGen1.Name() << "," << rGen2.Name() << "): stage 2");
-
-    // if necessary, move pResGen to rResGen
-    if(pResGen != &rResGen) {
-      pResGen->Move(rResGen);
-      delete pResGen;
-    } 
-    
-    FD_DF("LanguageDifference("<< rGen1.Name() << "," << rGen2.Name() << "): done");
+  // incl. all-empty case
+  if(IsEmptyLanguage(rGen2)) {
+    rResGen.Assign(rGen1);
+    rResGen.Name(CollapsString("LanguageDifference(" + rGen1.Name() + "," + rGen2.Name() + ")"));
     return;
+  }
+     
+  // use pointer pResGen to result rResGen
+  Generator* pResGen = &rResGen;
+  if(&rResGen == &rGen1 || &rResGen== &rGen2) {
+    pResGen = rResGen.New();
+  }    
+    
+  // due to the use of LanguageComplement(), rGen2 has to be deterministic
+  #ifdef FAUDES_CHECKED
+  if(!(rGen2.IsDeterministic())){
+    std::stringstream errstr;
+    errstr << "Nondeterministic parameter " << rGen2.Name() << ".";
+    throw Exception("LanguageDifference()", errstr.str(), 101);
+  }
+  #endif
+          
+  // prepare result
+  pResGen->Clear();
+     
+  // calculate "Lm1-Lm2" by building the intersection of Lm1 with the complement of Lm2
+  // for correct result, complement has to be computed wrt the alphabet of Lm1 (!)
+        
+  *pResGen=rGen2;
+  LanguageComplement(*pResGen,rGen1.Alphabet());
+  LanguageIntersection(rGen1, *pResGen, *pResGen);
+        
+  FD_DF("LanguageDifference(...): stage 2");
+
+  // if necessary, move pResGen to rResGen
+  if(pResGen != &rResGen) {
+    pResGen->Move(rResGen);
+    delete pResGen;
+  } 
+    
+  FD_DF("LanguageDifference(...): done");
+  return;
 }
 
 // LanguageConcatenateNonDet(rGen1, rGen2, rResGen)
@@ -838,9 +926,12 @@ void KleeneClosureNonDet(Generator& rGen) {
     
   // set name 
   rGen.Name(CollapsString("KleeneClosureNonDet("+ rGen.Name() + ")"));
-    
-  // The Kleene Closure of the empty set is the empty set
-  if(IsEmptyLanguage(rGen)) {
+
+  // make accessible (relevant)
+  rGen.Accessible();
+
+  // test for empty language
+  if(rGen.MarkedStatesSize()==0) {
     rGen.Clear();
     return;
   }
@@ -849,10 +940,10 @@ void KleeneClosureNonDet(Generator& rGen) {
   TransSet::Iterator tit;
   TransSet TransToInsert;
 
-  // initial state bug (detected by Tomas Masopust, fix proposed by Klaus Schmidt)
+  // initial state bug (detected by Tomas Masopust, fixes proposed by Klaus Schmidt and Florian Frohn)
   // 1. prepare the generator to have a unique initial state
-  // 2. if the initial state fails to be marked, introduce a fake marked initial state.
-  // 3. equip the fake markded initial state with the same transitions as the original initial state
+  // 2. if the initial state fails to be marked, introduce an alternative marked initial state.
+  // 3. equip the markded initial state with the same transitions as the original initial state
   UniqueInit(rGen);
   Idx istate = *rGen.InitStatesBegin();
   Idx imstate = istate;
@@ -862,10 +953,17 @@ void KleeneClosureNonDet(Generator& rGen) {
     for(tit = rGen.TransRelBegin(istate); tit != rGen.TransRelEnd(istate); ++tit) {	
       TransToInsert.Insert(imstate, tit->Ev, tit->X2);
     }
+    for (tit = TransToInsert.Begin(); tit != TransToInsert.End(); ++tit) {
+      rGen.SetTransition(*tit);
+    }
+    TransToInsert.Clear();
+    rGen.ClrInitState(istate);
   }
+  rGen.Accessible(); // cosmetic
+
       
   // for all transitions leading from a state x1 to a marked state: insert a transition
-  // with the same event that leads to the initial state(s). 
+  // with the same event that leads to the unique marked initial state. 
   for(tit = rGen.TransRelBegin(); tit != rGen.TransRelEnd(); ++tit) {	
     if(rGen.ExistsMarkedState(tit->X2)) {
       if(!(rGen.ExistsTransition(tit->X1, tit->Ev, imstate)) ){
@@ -898,8 +996,8 @@ void PrefixClosure(Generator& rGen) {
     
 }
 
-// IsPrefixClosed
-bool IsPrefixClosed(const Generator& rGen) {
+// IsClosed
+bool IsClosed(const Generator& rGen) {
   
   // figure relevant states
   StateSet relevant = rGen.AccessibleSet() * rGen.CoaccessibleSet();
@@ -1027,7 +1125,12 @@ void SelfLoop(Generator& rGen,const EventSet& rAlphabet,const StateSet& rStates)
   rGen.Name(name);
 }
 
-
+/** legacy wrapper, pre 2.33d */
+bool IsPrefixClosed(const Generator& rGen) {
+  FD_WARN("IsPrefixClosed(): API depreciated, use IsClosed()");
+  return IsClosed(rGen);
+}
+  
 } // namespace faudes
 
 #undef Product //see define above for comment

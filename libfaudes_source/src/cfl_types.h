@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
 Copyright (C) 2009 Ruediger Berndt
-Copyright (C) 2010 Thomas Moor
+Copyright (C) 2010, 2024 Thomas Moor
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,9 @@ namespace faudes {
  ************************************************/
 
 
-/** @defgroup RunTimeInterface  Run-Time Interface
+/**
+@defgroup RunTimeInterface  Run-Time Interface
+@section RunTimeInterface  Run-Time Interface
 
 The libFAUDES run-time interface (RTI) facilitates the development 
 of applications that are transparent to libFAUDES extensions, e.g.,
@@ -75,7 +77,7 @@ by the following components:
 - documentation class faudes::FunctionDefinition to accompany faudes-functions;
 - container class faudes::FunctionRegistry to hold FunctionDefintiion objects.
 
-@section RunTimeInterfaceSec2 Faudes-Types
+@subsection RunTimeInterfaceSec2 Faudes-Types
 
 Classes that participate in the run-time interface are referred to
 as faudes-types, instances are so called faudes-objects. Any faudes-type must
@@ -87,7 +89,7 @@ faudes-type, also an appropriate assignment operator and a copy constructor
 are required.
 
 
-@section RunTimeInterfaceSec3 Faudes-Type Definitions
+@subsection RunTimeInterfaceSec3 Faudes-Type Definitions
 
 A faudes-type is accompanied by an instance of faudes::TypeDefinition. It holds
 a name (std::string) to identify the faudes-type,
@@ -100,7 +102,7 @@ TypeDefinition, you are meant to provide the faudes-type name, the protototype
 and a file from which to read the documentation.
 
 
-@section RunTimeInterfaceSec4 Faudes-Functions and Faudes-Function Definitions
+@subsection RunTimeInterfaceSec4 Faudes-Functions and Faudes-Function Definitions
 
 Functions that participate in the run-time interface are organized similar
 to faudes-types. There is a base class faudes::Function from which to derive 
@@ -114,7 +116,7 @@ C++ API. Each Function class is accompanied by a faudes::FunctionDefinition inst
 which holds a prototype, basic documentation and a list of valid signatures. Each signature
 represents a valid parameter type configurations in terms of faudes-types. 
 
-@section RunTimeInterfaceSec5 Type- and Function-Registry 
+@subsection RunTimeInterfaceSec5 Type- and Function-Registry 
 
 The faudes::TypeRegistry and the faudes::FunctionRegistry are containers for TypeDefinition
 and FunctionDefinition instances, respectively. Applications access the registries via
@@ -130,7 +132,7 @@ set-up by the build system to gather all relevant prototypes, insert them in the
 registries and to subsequently read further documentation from a configuration 
 file.
 
-@section RunTimeInterfaceSec6 RTI and the Build System
+@subsection RunTimeInterfaceSec6 RTI and the Build System
 
 At stage <tt>make configure</tt>, the build system sets up the function LoadRegistry()
 by  
@@ -148,12 +150,12 @@ To have your C++ class participate in the libFAUDES run-time interface:
 
 -# derive your class from faudes::Type;
 -# make sure your class has a public default constructor and a public copy constructor;
--# use the provided macros to reimplement the virtual functions FType(), New(), Copy(), Cast(), 
+-# use the provided macros to reimplement the virtual functions New(), Copy(), Cast(), 
    Assign(), Equal(), and the acording operators =, == and !=;
 -# reimplement the virtual functions DoAssign(), DoEqual(), DoRead(), DoWrite() and Clear();
 -# optionally, reimplement the alternative output formats DoDWrite(), DoSWrite(), DoXWrite()
 -# provide an .rti file for the formal TypeDefinition; 
--# supplement your .rti file by an html formated documentation text;  
+-# supplement your .rti file by an HTML formated documentation text;  
  
 You will need to inspect and edit the main Makefile or your plugin's Makefile
 to advertise your additional sources. A <tt>make configure</tt> will then
@@ -179,6 +181,9 @@ class TypeDefinition;
  * The class is designed to impose as little overhead as possible, and
  * hence, does not hold any data. It does, however, provide a
  * uniform interface for assignment, factory functions, and token IO.
+ * There is a tread-off in designing a common base class regarding features
+ * vs. overhead. We provide a comparatively light faudes::Type with minimal
+ * overhead and a more featured version faudes::FullType. 
  *
  * We think of a faudes-typed object to be configured by defining
  * data and, in due course, manipulated via its public interface 
@@ -211,7 +216,8 @@ class TypeDefinition;
  * - DoSWrite() and DoDWrite for alternative output formats (statistical summary and debugging)
  *
  * - Name() to get/set the name of an optional (and purely cosmetic) object name
- * - Clear() to reset all configuration data,
+ * - Clear() to reset all configuration data default,
+ * - IsDefault() test for default configuration data,
  * - New() to construct an object of identical type on heap (factory method),
  * - Copy() to construct an object of identical type and configuration on heap (factory method),
  * - Cast() to dynamically cast another object to this type (type check method)
@@ -225,6 +231,7 @@ class TypeDefinition;
  * FAUDES_TYPE_DELARATION and FAUDES_TYPE_IMPLEMENTATION, respectively. The various
  * attribute classes illustrate their ussage; see e.g. AttributeFlags.
  *
+ * 
  *
  * Note on token IO: In libFAUDES 2.16e, implementation of a new file format is prepared 
  * by the virtual function interface DoXWrite(). The intention is to better support advanced 
@@ -293,10 +300,18 @@ class FAUDES_API Type {
   virtual const Type* Cast(const Type* pOther) const;
 
   /**
-   * Clear configuration data.  Derived classes should re-implement this
+   * Clear configuration data to default.  Derived classes should re-implement this
    * method to ensure some consistent configuration data.
    */
   virtual void Clear(void);
+
+  /**
+   * Test for default configuration data.  Derived classes may reimplement this
+   * conservatively, i.e., false negatives should be acceptable. 
+   ^
+   * Note may refactor to IsClear[ed]()? 
+   */
+  virtual bool IsDefault(void) const;
 
   /**
    * Assign configuration data from other object. 
@@ -337,7 +352,7 @@ class FAUDES_API Type {
    *    Source to copy from
    * @return Reference to this object.
    */
-  virtual Type& operator=(const Type& rSrc);
+  Type& operator=(const Type& rSrc);
 
   /**
    * Test equality of configuration data.
@@ -372,7 +387,7 @@ class FAUDES_API Type {
    * @return 
    *   True on match.
    */
-  virtual bool operator==(const Type& rOther) const;
+  bool operator==(const Type& rOther) const;
 
 
   /**
@@ -388,14 +403,14 @@ class FAUDES_API Type {
    * @return 
    *   True on mismatch.
    */
-  virtual bool operator!=(const Type& rOther) const;
+  bool operator!=(const Type& rOther) const;
 
 
   /** 
    * Set the objects's name.
    *
-   * The base class Type does not implement an object name,
-   * derivatives usually do so, except for attributes. 
+   * faudes::Type does not implement an object name,
+   * derivatives usually do so. See also faudes::Type.
    *
    * @param rName
    *   Name
@@ -405,12 +420,26 @@ class FAUDES_API Type {
   /** 
    * Get objects's name.
    *
-   * The base class Type does not implement an object name,
-   * derivatives usually do so, except for attributes. 
+   * faudes::Type does not implement an object name,
+   * derivatives usually do so. See also faudes::Type.
+   *
    * @return 
-   *   Name of generator
+   *   Name of object
    */
   virtual const std::string& Name(void) const;
+
+  /** 
+   * Get objects's type name. 
+   *
+   * Retrieve the faudes-type name from the type registry.
+   * This method silently returns the empty string if the type is 
+   * not (yet) registered. The derived class faudes::Type implements
+   * a cache to avoid repeating the log-n lookup.
+   *
+   * @return 
+   *   Faudes-type name or empty string.
+   */
+  virtual const std::string& TypeName(void) const;
 
   /**
    * Write configuration data to console.
@@ -814,10 +843,7 @@ class FAUDES_API Type {
    *
    * Technical note: for minimal memory requirement, the type definition
    * is not cached but retrieved on every invokation of this method.
-   * Derived classes may reimplement this method for performance 
-   * reasons. Options include a look-up cache or a static member 
-   * for the actual type definition. The latter variant will make the
-   * type independant from the type registry.
+   * The derived class faudes::Type introduces a cache.
    *
    * @return 
    *   Type definition reference.
@@ -825,22 +851,9 @@ class FAUDES_API Type {
   virtual const TypeDefinition* TypeDefinitionp(void) const;
 
 
-  /** 
-   * Get objects's type name. 
-   *
-   * Retrieve the faudes-type name from the type registry.
-   * This method silently returns the empty string if the type is 
-   * not (yet) registered.
-   *
-   * @return 
-   *   Faudes-type name or empty string.
-   */
-  virtual const std::string& TypeName(void) const;
-
   /*
    * Convenience function to set up std begin token
    * for XML mode token I/O.
-   *
    *
    * @param rLabel
    *   User specified label
@@ -854,12 +867,11 @@ class FAUDES_API Type {
 
 private:
 
-  // static string constant
+  // static string constant.
   static std::string msStringVoid;
   static std::string msStringEmpty;
 
 };
-
 
 
 
@@ -870,9 +882,9 @@ private:
   public: virtual const Type* Cast(const Type* pOther) const; \
   public: virtual ctype& Assign(const Type& rSrc);      \
   public: virtual bool Equal(const Type& rOther) const; \
-  public: virtual ctype& operator=(const ctype& rSrc);  \
-  public: virtual bool operator==(const ctype& rOther) const; \
-  public: virtual bool operator!=(const ctype& rOther) const; 
+  public: ctype& operator=(const ctype& rSrc);	  \
+  public: bool operator==(const ctype& rOther) const; \
+  public: bool operator!=(const ctype& rOther) const; 
 
 /** faudes type declaration macro, template version */
 #define FAUDES_TYPE_TDECLARATION(ftype,ctype,cbase)   \
@@ -881,9 +893,9 @@ private:
   public: virtual const Type* Cast(const Type* pOther) const; \
   public: virtual ctype& Assign(const Type& rSrc);      \
   public: virtual bool Equal(const Type& rOther) const; \
-  public: virtual ctype& operator=(const ctype& rSrc);  \
-  public: virtual bool operator==(const ctype& rOther) const; \
-  public: virtual bool operator!=(const ctype& rOther) const; 
+  public: ctype& operator=(const ctype& rSrc);      \
+  public: bool operator==(const ctype& rOther) const; \
+  public: bool operator!=(const ctype& rOther) const; 
 
 /** faudes type implementation macros */
 #define FAUDES_TYPE_IMPLEMENTATION_NEW(ftype,ctype,cbase)	\
@@ -896,11 +908,11 @@ private:
 #define FAUDES_TYPE_IMPLEMENTATION_ASSIGN(ftype,ctype,cbase)	\
   ctype& ctype::Assign(const Type& rSrc) { \
     if(const ctype* csattr=dynamic_cast< const ctype * >(&rSrc)) {	\
-      this->Clear(); DoAssign(*csattr);} \
+      /* this->Clear(); */ DoAssign(*csattr);}				\
     else {    \
       cbase::Assign(rSrc);};  \
     return *this;} \
-  ctype& ctype::operator=(const ctype& rSrc) { this->Clear(); DoAssign(rSrc); return *this; }
+  ctype& ctype::operator=(const ctype& rSrc) { /* this->Clear() */; DoAssign(rSrc); return *this; }
 #define FAUDES_TYPE_IMPLEMENTATION_EQUAL(ftype,ctype,cbase)	\
   bool ctype::Equal(const Type& rOther) const { \
     if(&rOther==this) return true; \
@@ -925,11 +937,11 @@ private:
 #define FAUDES_TYPE_TIMPLEMENTATION_ASSIGN(ftype,ctype,cbase,ctemp)	\
   ctemp ctype& ctype::Assign(const Type& rSrc) { \
     if(const ctype* csattr=dynamic_cast< const ctype * >(&rSrc)) {	\
-      this->Clear(); DoAssign(*csattr);} \
+      /* this->Clear(); */ DoAssign(*csattr);}				\
     else {    \
       cbase::Assign(rSrc);};  \
     return *this;} \
-  ctemp ctype& ctype::operator=(const ctype& rSrc) { this->Clear(); DoAssign(rSrc); return *this; }
+  ctemp ctype& ctype::operator=(const ctype& rSrc) { /* this->Clear(); */ DoAssign(rSrc); return *this; }
 #define FAUDES_TYPE_TIMPLEMENTATION_EQUAL(ftype,ctype,cbase,ctemp)	\
   ctemp bool ctype::Equal(const Type& rOther) const { \
     if(&rOther==this) return true; \
@@ -952,11 +964,11 @@ private:
     return dynamic_cast< const ctype * >(pOther); } \
   ctype& ctype::Assign(const Type& rSrc) { \
     if(const ctype* csattr=dynamic_cast< const ctype * >(&rSrc)) {	\
-      this->Clear(); this->DoAssign(*csattr);} \
+      /* this->Clear(); */ this->DoAssign(*csattr);}			\
     else {    \
       cbase::Assign(rSrc);};  \
     return *this;} \
-  ctype& ctype::operator=(const ctype& rSrc) { this->Clear(); this->DoAssign(rSrc); return *this; } \
+  ctype& ctype::operator=(const ctype& rSrc) { /* this->Clear(); */ this->DoAssign(rSrc); return *this; } \
   bool ctype::Equal(const Type& rOther) const { \
     if(&rOther==this) return true; \
     if(typeid(rOther) != typeid(*this)) return false; \
@@ -978,11 +990,11 @@ private:
     return dynamic_cast< const ctype * >(pOther); } \
   ctemp ctype& ctype::Assign(const Type& rSrc) { \
     if(const ctype* csattr=dynamic_cast< const ctype * >(&rSrc)) {	\
-      this->Clear(); this->DoAssign(*csattr);} \
+      /* this->Clear(); */ this->DoAssign(*csattr);}			\
     else {    \
       cbase::Assign(rSrc);};  \
     return *this;} \
-  ctemp ctype& ctype::operator=(const ctype& rSrc) { this->Clear(); this->DoAssign(rSrc); return *this; } \
+  ctemp ctype& ctype::operator=(const ctype& rSrc) { /* this->Clear(); */ this->DoAssign(rSrc); return *this; } \
   ctemp bool ctype::Equal(const Type& rOther) const { \
     if(&rOther==this) return true; \
     if(typeid(rOther) != typeid(*this)) return false; \
@@ -994,112 +1006,233 @@ private:
   ctemp bool ctype::operator!=(const ctype& rOther) const { return !this->DoEqual(rOther); }
 
 
-/** faudes type implementation macros, overall */
-/*
-#define FAUDES_TYPE_IMPLEMENTATION(ftype,ctype,cbase)	\
-  ctype* ctype::New(void) const {			\
-    return new ctype(); }  \
-  ctype* ctype::Copy(void) const {			\
-    return new ctype(*this); }			\
-  const Type* ctype::Cast(const Type* pOther) const { \
-    return dynamic_cast<const ctype*>(pOther); } \
-  ctype& ctype::Assign(const Type& rSrc) { \
-    if(const ctype* csattr=dynamic_cast<const ctype*>(&rSrc)) \
-      { this->Clear(); DoAssign(*csattr); return *this;}      \
-    cbase::Assign(rSrc); \
-    return *this;} \
-  ctype& ctype::operator=(const ctype& rSrc) { this->Clear(); DoAssign(rSrc); return *this;} \
-  bool ctype::Equal(const Type& rOther) const { \
-    if(&rOther==this) return true; \
-    if(typeid(rOther) != typeid(*this)) return false; \
-    const ctype* csattr=dynamic_cast<const ctype*>(&rOther);	\
-    if(!csattr) return false; \
-    if(!DoEqual(*csattr)) return false;		\
-    return true;} \
-  bool ctype::operator==(const ctype& rOther) const { return DoEqual(rOther); } \
-  bool ctype::operator!=(const ctype& rOther) const { return !DoEqual(rOther); } 
-*/
+/**
+ * Wrapper for dynamivc_cast<Type*>() that returns a nullptr when the argument is not a
+ * polymorphic class (instead of a compile-time error). See TBaseSet::DoWrite() for the
+ * use case that triggered this wrapper.
+ */
+template<class  T, bool = std::is_polymorphic<T>::value>
+class CastToType {
+};
+template<class T>
+class CastToType<T, true> {
+public:
+  static Type* Pointer(T* ptr) {return dynamic_cast<Type*>(ptr);};
+  static const Type* ConstPointer(const T* ptr) {return dynamic_cast<const Type*>(ptr);};
+};
+template<class T>
+ class CastToType<T,false>  {
+public:
+  static Type* Pointer(T* ptr) {(void) ptr; return nullptr;};
+  static const Type* ConstPointer(const T* ptr) {(void) ptr; return nullptr;};
+};
+  
+  
+
+/**
+ * Extended Type to base Attributes. Attributes are used as template parameters for
+ * faudes containers and facilitate the modelling of customized properties of events,
+ * states and transitions. See the class faudes::AttributeFlags for a non-trivial example.
+ *
+ * To derive a class from faudes::AttrType you should reimplement the virtual
+ * interface
+ * - virtual methods DoRead and DoWrite for token io (as in faudes::Type)
+ * - virtual methods for DoAssign() (as in faudes::Type) 
+ * - the factory method New() (use provided macro from faudes::Type)
+ * - the rti typecast method Cast() (use provided macro from faudes::Type)
+ * - user level Assign() method (use provided macro from faudes::Type)
+ * Use the FAUDES_TYPE_DECLARATION and FAUDES_TYPE_IMPLEMENTATION macros to generate
+ * the API methods. 
+ *
+ * The class faudes::AttrType extends the base Type marginally to distinguish void attributes
+ * from plain type objects; i.e., we introduce a marker in the type hierarchy. There is (almost)
+ * nothing functional about this class and we should find ways to go without.
+ *
+ * @ingroup RunTimeInterface
+ */
 
 
+class FAUDES_API AttrType : public Type {
+ 
+FAUDES_TYPE_DECLARATION(Void,AttrType,Type)
 
-/** faudes type implementation macros, individual, template version */
-/*
-#define FAUDES_TYPE_TIMPLEMENTATION_NEW(ftype,ctype,cbase,ctemp)	\
-  ctemp ctype* ctype::New(void) const {			\
-    return new ctype(); } 
-#define FAUDES_TYPE_TIMPLEMENTATION_COPY(ftype,ctype,cbase,ctemp)	\
-  ctemp ctype* ctype::Copy(void) const {			\
-    return new ctype(*this); } 
-#define FAUDES_TYPE_TIMPLEMENTATION_CAST(ftype,ctype,cbase,ctemp)	\
-  ctemp const Type* ctype::Cast(const Type* pOther) const { \
-    return dynamic_cast<const ctype*>(pOther);} 
-#define FAUDES_TYPE_TIMPLEMENTATION_ASSIGN(ftype,ctype,cbase,ctemp)	\
-  ctemp ctype& ctype::Assign(const Type& rSrc) { \
-    if(const ctype* csattr=dynamic_cast<const ctype*>(&rSrc)) { \
-      this->Clear(); DoAssign(*csattr); return *this;}		\
-    cbase::Assign(rSrc); \
-    return *this;} \
-  ctemp ctype& ctype::operator=(const ctype& rSrc) { this->Clear(); DoAssign(rSrc); return *this; }
-#define FAUDES_TYPE_TIMPLEMENTATION_EQUAL(ftype,ctype,cbase,ctemp)	\
-  ctemp bool ctype::Equal(const Type& rOther) const { \
-    if(&rOther==this) return true; \
-    if(typeid(rOther) != typeid(*this)) return false; \
-    const ctype* csattr=dynamic_cast<const ctype*>(&rOther); \
-    if(!csattr) return false; \
-    if(!this->DoEqual(*csattr)) return false;		\
-    return true;} \
-  ctemp bool ctype::operator==(const ctype& rOther) const { return this->DoEqual(rOther); } \
-  ctemp bool ctype::operator!=(const ctype& rOther) const { return !this->DoEqual(rOther); }
-*/
+public:
 
+  using Type::operator=;
+  using Type::operator==;
+  using Type::operator!=;
 
-/** faudes type implementation macros, overall, template version */
-/*
-#define FAUDES_TYPE_TIMPLEMENTATION(ftype,ctype,cbase,ctemp)	\
-  ctemp ctype* ctype::New(void) const {		\
-    return new ctype(); }  \
-  ctemp ctype* ctype::Copy(void) const {			\
-    return new ctype(*this); }  \
-  ctemp const Type* ctype::Cast(const Type* pOther) const { \
-    return dynamic_cast<const ctype*>(pOther);} \
-  ctemp ctype& ctype::Assign(const Type& rSrc) { \
-    if(const ctype* csattr=dynamic_cast<const ctype*>(&rSrc)) \
-      { this->Clear(); DoAssign(*csattr); return *this;}      \
-    cbase::Assign(rSrc); \
-    return *this;} \
-  ctemp ctype& ctype::operator=(const ctype& rSrc) { this->Clear(); DoAssign(rSrc); return *this; } \
-  ctemp bool ctype::Equal(const Type& rOther) const { \
-    if(&rOther==this) return true; \
-    if(typeid(rOther) != typeid(*this)) return false; \
-    const ctype* csattr=dynamic_cast<const ctype*>(&rOther);	\
-    if(!csattr) return false; \
-    if(!this->DoEqual(*csattr)) return false;		\
-    return true;} \
-  ctemp bool ctype::operator==(const ctype& rOther) const { return this->DoEqual(rOther); } \
-  ctemp bool ctype::operator!=(const ctype& rOther) const { return !this->DoEqual(rOther); } 
-*/
+  /** Constructor */
+  AttrType(void);
 
-/** faudes type implementation macros, overall, debug version */
-/*
-#define FAUDES_TYPE_IMPLEMENTATION(ctype,cbase,ctemp)	\
-  ctemp ctype* ctype::New(void) const {			\
-    return new ctype(); }  \
-  ctemp const ctype* ctype::Cast(const Type* pOther) const { \
-    return dynamic_cast<const ctype*>(pOther);} \
-  ctemp ctype& ctype::Assign(const Type& rSrc) { \
-    FD_WARN("RTI "<< typeid(ctype).name() << "::ASSIGN() V: " << typeid(*this).name() << \
-      " from " << typeid(rSrc).name()); \
-    if(const ctype* csattr=dynamic_cast<const ctype*>(&rSrc)) { this->Clear(); return DoAssign(*csattr);} \
-    cbase::Assign(rSrc); \
-    return *this;} \
-  ctemp ctype& ctype::operator=(const ctype& rSrc) { \
-    FD_WARN("RTI "<< typeid(ctype).name() << "::ASSIGN() O: " << typeid(*this).name() << \
-      " from " << typeid(rSrc).name()); \
-    this->Clear(); \
-    return DoAssign(rSrc); }
-*/
+  /** Copy Constructor */
+  AttrType(const AttrType& rSrc);
+
+  /** Destructor */
+  virtual ~AttrType(void);
+
+  /** Test for default value. */
+  virtual bool IsDefault(void) const {return true;};
+
+  /**
+   * Skip attribute tokens.
+   *
+   * Helper method to be called after all sttribute derived classes had their
+   * chance to read their data. It skips all tokens and sections until it reaches a 
+   * String or decimal Integer. This should go to BaseSet.
+   *
+   * @param rTr
+   *   TokenReader to read from
+   * @exception Exception
+   *   - IO error (id 1)
+   */
+  static void Skip(TokenReader& rTr);
+
+protected:
+
+  /** Assign (no members, dummy) */
+  void DoAssign(const AttrType& rSrc) { (void) rSrc; };
+
+  /** Test (no members, dummy) */
+  bool DoEqual(const AttrType& rOther) const { (void) rOther; return true; }
+  
+};
+
+  
+/**
+ * This class extends the base Type by common features worthwhile for "large objects",
+ * e.g., object name, a cache for the regsitry record and convenience access wrappers.
+ *
+ * @ingroup RunTimeInterface
+ */
+
+class FAUDES_API ExtType : public AttrType {
+
+public:
+
+  using AttrType::operator=;
+  using AttrType::operator==;
+  using AttrType::operator!=;
 
 
+  // std faudes type interface
+  FAUDES_TYPE_DECLARATION(Void,ExtType,AttrType)
+
+  /** Constructor */
+  ExtType(void);
+
+  /** Copy constructor */
+  ExtType(const ExtType& rType);
+
+  /** Destructor */
+  virtual ~ExtType(void);
+
+  /** 
+   * Get objects name
+   * 
+   * @return
+   *   Name 
+   */
+  const std::string& Name(void) const;
+        
+  /**
+   * Set objects name
+   *
+   * @param rName
+   *   Name to set
+   */
+  void Name(const std::string& rName);
+
+
+  /** 
+   * Get objects's type name. 
+   *
+   * Retrieve the faudes-type name from the type registry.
+   *
+   * @return 
+   *   Faudes-type name or empty string.
+   */
+  virtual const std::string& TypeName(void) const;
+
+  /**
+   * Overwrite faudes-type name.
+   *
+   * This method is used to overwrite the faudes-type identifyer to account for
+   * unregistered classe/
+   *
+   * @param rType
+   *   Faudes-type name to set
+   */
+  virtual void TypeName(const std::string& rType);
+
+  /**
+   * Get the element name tag.
+   *
+   * Tags used for XML IO when eriting elements of a container class.
+   * This is either the deribeved class default of found in the registry.
+   *
+   * @return
+   *   Tag
+   */
+  virtual const std::string&  ElementTag(void) const;
+  /**
+   * Configure the element name tag.
+   *
+   * This method allows to overwrite the tag used for elements
+   * in XML IO. For usual, you will register derived classes with
+   * the run-time-interface and set the elemen tag for XML IO.
+   *
+   * @param rTag
+   *   Tag to set
+   */
+  virtual void ElementTag(const std::string& rTag);
+
+  /**
+   * Get the element type.
+   *
+   * This should be found in the registry. 
+   *
+   * @return
+   *   Tag
+   */
+  virtual const std::string&  ElementType(void) const;
+
+  /**
+   * Get registry record
+   *
+   * Returns nullptr if not registered
+   *
+   * @return
+   *   Pointer to registry entry
+   */
+  virtual const TypeDefinition* TypeDefinitionp(void) const;
+
+
+private:  
+
+  /** TypeDefinition cache (should use guarded pointer here) */
+  const TypeDefinition* pTypeDefinition;
+
+  /** Current/cached faudes type-name */
+  std::string  mFaudesTypeName;
+
+  /** Current/cached name of elements (use protected accessor methods for caching) */
+  std::string  mElementTag;
+
+protected:  
+
+  /** Current/cached name of elements (use protected accessor methods for caching) */
+  std::string  mElementType;
+
+  /** Defauft name of elements (if not over written manually or by registry) */
+  std::string  mElementTagDef;
+
+  /** object name */
+  std::string mObjectName;
+};
+  
+
+ 
 
 /**
  * Structure to hold documentation data relating to a faudes-type or -function. 
@@ -1131,6 +1264,12 @@ class FAUDES_API Documentation : public Type {
   FAUDES_TYPE_DECLARATION(Void,Documentation,Type)
   
 public:
+
+  using Type::operator=;
+  using Type::operator==;
+  using Type::operator!=;
+
+
   /** Constructor */
   Documentation(void);
 
@@ -1146,7 +1285,7 @@ public:
   void Clear(void);
 
   /**
-   * Get name of the entety to document (aka faudes-type or faudes-function).
+   * Get name of the entity to document (aka faudes-type or faudes-function).
    *
    * @return
    * 	Name
@@ -1325,7 +1464,6 @@ public:
    *
    * @param rSrc 
    *    Source to copy from
-   * @return Reference to this object.
    */
   void DoAssign(const Documentation& rSrc);
 
@@ -1469,6 +1607,10 @@ class FAUDES_API TypeDefinition : public Documentation {
 
  public:
 
+  using Documentation::operator=;
+  using Documentation::operator==;
+  using Documentation::operator!=;
+
   /** 
    * Constructor 
    *
@@ -1564,23 +1706,42 @@ class FAUDES_API TypeDefinition : public Documentation {
 
 
   /** 
-   * Parameter access: Xml Element Tag
+   * Parameter access: Element Tag
    *
-   * This parameter is used for Xml IO of sets and vectors. It determines
+   * This parameter is used for IO of sets and vectors. It determines
    * the tag to used for individual elments.
    *
    * @return
    *   Tag parameter.
    */
-  const std::string& XElementTag(void) const; 
+  const std::string& ElementTag(void) const; 
 
   /** 
-   * Parameter access: Xml Element Tag
+   * Parameter access: Element Tag
    *
    * @param rTag
    *   New tag parameter
    */
-  void XElementTag(const std::string& rTag); 
+  void ElementTag(const std::string& rTag); 
+
+  /** 
+   * Parameter access: Element Tag
+   *
+   * This parameter is used for IO of sets and vectors. It determines
+   * the type to used for individual elments.
+   *
+   * @return
+   *   Tag parameter.
+   */
+  const std::string& ElementType(void) const; 
+
+  /** 
+   * Parameter access: Element Tag
+   *
+   * @param rTag
+   *   New tag parameter
+   */
+  void ElementType(const std::string& rEype); 
 
 protected:
 
@@ -1590,7 +1751,6 @@ protected:
    *
    * @param rSrc 
    *    Source to copy from
-   * @return Reference to this object.
    */
   void DoAssign(const TypeDefinition& rSrc);
 
@@ -1692,8 +1852,11 @@ protected:
   /** Type-pointer tp prototype instance */
   Type* mpType;
 
-  /** Extra documentation/parameter: Xml Element Tag */
-  std::string mXElementTag;
+  /** Extra documentation/parameter: Element Type */
+  std::string mElementType;
+
+  /** Extra documentation/parameter: Element Tag */
+  std::string mElementTag;
 
 }; //TypeDefinition
 
@@ -1715,7 +1878,12 @@ Implemention of template members functions
 template<class T>
 TypeDefinition* TypeDefinition::Constructor(const std::string& rTypeName){
   FD_DRTI("TypeDefinition::Construct<" << typeid(T).name() << ">(" << rTypeName << ")");
-  return Constructor(new T, rTypeName);
+  TypeDefinition* ftd=Constructor(new T, rTypeName);
+  /*
+  cproto= *(ftd->Prototype());
+  FD_WARN("TypeDefinition::Construct<>: fprototype " << typeid(cproto).name());    
+  */
+  return ftd;
 }
 
 

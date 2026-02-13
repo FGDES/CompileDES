@@ -1,4 +1,4 @@
-/** @File sp_densityfnct.h  Discrete density function approximation */
+/** @file sp_densityfnct.h  Discrete density function approximation */
 
 /*
    Copyright (C) 2008  Thomas Moor

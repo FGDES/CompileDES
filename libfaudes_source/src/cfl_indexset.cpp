@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
    Copyright (C) 2006  Bernd Opitz
-   Copyright (C) 2007  Thomas Moor
+   Copyright (C) 2007, 2024  Thomas Moor
    Exclusive copyright is granted to Klaus Schmidt
 
    This library is free software; you can redistribute it and/or
@@ -21,6 +21,10 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA */
 
 #include "cfl_indexset.h"
+
+//local debug
+//#undef FD_DC
+//#define FD_DC(m) FD_WARN(m)
 
 
 namespace faudes {
@@ -158,7 +162,7 @@ void IndexSet::DoXWrite(TokenWriter& rTw, const std::string& rLabel,const Type* 
   */
   // Loop elements
   Iterator it, conit;
-  std::string etstr=XElementTag();
+  std::string etstr=ElementTag();
   for(it = Begin(); it != End(); ++it) {
     // identify consecutive block
     Idx start = *it;
@@ -194,12 +198,19 @@ void IndexSet::DoXWrite(TokenWriter& rTw, const std::string& rLabel,const Type* 
   rTw.WriteEnd(btag.StringValue());
 }
 
+// debug variant
+void IndexSet::DoDWriteElement(TokenWriter& rTw, const Idx& rElem, const std::string &rLabel, const Type* pContext) const {
+  (void) pContext;
+  (void) rLabel;
+  rTw << rElem;
+}
+
 // DoRead(rTr, rLabel)
 void IndexSet::DoRead(TokenReader& rTr, const std::string& rLabel,const Type* pContext) {
    // set up defaults
   std::string label=rLabel;
   std::string ftype=TypeName();
-  std::string etstr=XElementTag();
+  std::string etstr=ElementTag();
   // figure section from current token
   Token token;
   if(label=="") {

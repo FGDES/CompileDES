@@ -36,7 +36,7 @@ namespace faudes {
  *
  * TAttrMap provides a typed interface to access the attributes associated with
  * elements of a TBaseSet. It is meant to faciltate classes derived from TBaseSet 
- * that use non-trivial attributes. Note that actual attribute map is hosted by
+ * that use non-trivial attributes. Note that the actual attribute map is hosted by
  * TBaseSet itself.
  *
  * Note: technically, the TAttrMap holds a reference to the associated TBaseSet.
@@ -49,7 +49,7 @@ namespace faudes {
 
 
 template<class T, class Attr, class Cmp=std::less<T> >
-class FAUDES_API TAttrMap {
+class FAUDES_TAPI TAttrMap {
 
 
 public:
@@ -220,7 +220,7 @@ public:
   void EraseSet(const TBaseSet<T,Cmp>& rOtherSet);
 
   /** 
-   * Restrict to specified subset. Erases any elements no in
+   * Restrict to specified subset. Erases any elements not in
    * the specified set. This function
    * ignores the attributes of the other set and maintains the attributes 
    * of the remaining elements in this set.
@@ -230,7 +230,7 @@ public:
    */
    void RestrictSet(const TBaseSet<T,Cmp>& rOtherSet);
 
-
+   
 
 protected:
 
@@ -431,7 +431,6 @@ TEMP void THIS::RestrictSet(const TBaseSet<T,Cmp>& rOtherSet) {
   }
 
 }
-
 
 
 // attribute typeinfo

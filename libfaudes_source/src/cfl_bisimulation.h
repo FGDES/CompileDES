@@ -56,7 +56,7 @@ namespace faudes {
 * algorithm for bisimulation equivalence,” Science of Computer Programming, vol. 13, pp. 219-236, 1990.
 *
 * This interface is neither used nor tested. 
-* Use calcBisimulation(Generator& , std::map<Idx,Idx>& , Generator& ) instead.
+* Use ComputeBisimulation(Generator& , std::map<Idx,Idx>& , Generator& ) instead.
 *
 * @param rGenOrig
 *   Original generator
@@ -65,16 +65,16 @@ namespace faudes {
 *
 * @ingroup GeneratorFunctions
 */
-extern FAUDES_API void calcBisimulation(const Generator& rGenOrig, std::map<Idx,Idx>& rMapStateToPartition);
+extern FAUDES_API void ComputeBisimulation(const Generator& rGenOrig, std::map<Idx,Idx>& rMapStateToPartition);
 
 
 /**
 * Computation of the coarsest bisimulation relation for a specified generator. 
 *
-* This is a convenience wrapper for calcBisimulation(Generator&, std::map<Idx,Idx>&) to
+* This is a convenience wrapper for ComputeBisimulation(Generator&, std::map<Idx,Idx>&) to
 * return the quitient generator to represent the result. 
 *
-* See calcBisimulation(const Generator&, std::map<Idx,Idx>).
+* See ComputeBisimulation(const Generator&, std::map<Idx,Idx>).
 *
 * @param rGenOrig
 *   Original generator
@@ -86,25 +86,25 @@ extern FAUDES_API void calcBisimulation(const Generator& rGenOrig, std::map<Idx,
 *
 * @ingroup GeneratorFunctions
 */
-extern FAUDES_API void calcBisimulation(const Generator& rGenOrig, std::map<Idx,Idx>& rMapStateToPartition, Generator& rGenPart);
+extern FAUDES_API void ComputeBisimulation(const Generator& rGenOrig, std::map<Idx,Idx>& rMapStateToPartition, Generator& rGenPart);
 
 
 /**
 * Computation of the coarsest bisimulation relation for a specified generator. 
 *
-* This is a convenience wrapper for calcBisimulation(Generator&, std::map<Idx,Idx>&) to
+* This is a convenience wrapper for ComputeBisimulation(Generator&, std::map<Idx,Idx>&) to
 * return a list of nontrivial equivalence classes (singletons are not reported)
 *
-* See calcBisimulation(const Generator&, std::map<Idx,Idx>).
+* See ComputeBisimulation(const Generator&, std::map<Idx,Idx>).
 *
 * @param rGenOrig
 *   Original generator
-* @param rPartition 
+* @param rPartitions 
 *   list of equivalent states
 *
 * @ingroup GeneratorFunctions
 */
-extern FAUDES_API void calcBisimulation(const Generator& rGenOrig, std::list< StateSet >& rClasses);
+extern FAUDES_API void ComputeBisimulation(const Generator& rGenOrig, std::list< StateSet >& rPartitions);
 
 
 }

@@ -34,6 +34,14 @@
 #include <set>
 #include <algorithm>
 
+// fix mingw toochain
+#ifdef THIS
+#undef THIS
+#endif  
+
+//#define FAUDES_DEBUG_CODE
+//#define FAUDES_DEBUG_CONTAINER
+
 namespace faudes {
 
 /** @addtogroup ContainerClasses */
@@ -74,8 +82,8 @@ template<class T, class Attr, class Cmp> class TAttrMap;
  * iterators throw an exception (id 62) when used as an argument to a BaseSet function. 
  *
  * The TBaseSet also hosts a container to associate an attribute with each set element. However,
- * in the plain TBAseSey the attribute type is set to void and member methods only deal 
- * with attributes when this does not invilve too much overhead. To make effective use of attributes, 
+ * in the plain TBaseSet the attribute type is set to void and member methods only deal 
+ * with attributes when this does not involve too much overhead. To make effective use of attributes, 
  * one is meant to derive a class from TBaseSet that encodes the actual attribute type and 
  * that provides appropriate access methods. This is facilitated by the class TAttrMap. 
  *
@@ -90,11 +98,15 @@ template<class T, class Attr, class Cmp> class TAttrMap;
  */
 
 template<class T, class Cmp=std::less<T> >
-class FAUDES_API TBaseSet : public Type {       
+class FAUDES_TAPI TBaseSet : public ExtType {       
 
-  FAUDES_TYPE_TDECLARATION(Void,TBaseSet,Type)
+  FAUDES_TYPE_TDECLARATION(Void,TBaseSet,ExtType)
 
 public:
+
+  using ExtType::operator=;
+  using ExtType::operator==;
+  using ExtType::operator!=;
 
   /** allow access to attribute interface class */
   template<class TP, class AP, class CP> friend class TAttrMap;
@@ -131,26 +143,14 @@ public:
   virtual ~TBaseSet(void);
 
   /** 
-   * Return name of TBaseSet 
-   * 
-   * @return
-   *   Name of TBaseSet
-   */
-  const std::string& Name(void) const;
-        
-  /**
-   * Set name of TBaseSet
-   *
-   * @param rName
-   *   Name to set
-   */
-  void Name(const std::string& rName);
-
-
-  /** 
-   * Clear all set
+   * Clear all set to default aka empty
    */
   virtual void Clear(void);
+      
+  /** 
+   * Test fo default aka empty
+   */
+  virtual bool IsDefault(void) const;
       
   /**
    * Get Size of TBaseSet
@@ -169,22 +169,45 @@ public:
   bool Empty(void) const;
 
   /**
-   * Return pretty printable element. 
-   * Reimplement this method for derived classes.
+   * Return pretty printable element.
+   * Primary meant for debugging messages.
    *
    * @param rElem
-   *   Element to print
+   *   element to print
    *
    * @return
    *   String
    */
   virtual std::string Str(const T& rElem) const;
 
+  /**
+   * Return pretty printable set
+   * Primary meant for debugging messages.
+   *
+   * @param rElem
+   *   element to print
+   *
+   * @return
+   *   String
+   */
+  virtual std::string Str(void) const;
+
+
   /** 
    * Iterator class for high-level api to TBaseSet.
    *
    */
   class Iterator;
+
+  /** 
+   * Iterator class for high-level api to TBaseSet.
+   *
+   * This is a convenoience typedef --- faudes set iterators are const anyway.
+   *
+   */
+  typedef Iterator CIterator;
+
+
 
   /** 
    * Iterator to the begin of set
@@ -254,6 +277,13 @@ public:
    */
   virtual void RestrictSet(const TBaseSet& rOtherSet);
 
+  /** 
+   * Test for this set to be disjoint witg other set 
+   *
+   * @param rOtherSet 
+   *    Set of elements to keep
+   */
+  virtual bool Disjoint(const TBaseSet& rOtherSet) const;
 
   /** 
    * Insert specified element
@@ -364,7 +394,7 @@ public:
   void Lock(void) const;
 
   /** 
-   * Iterator class for high-level api to TBaseSet.
+   * Iterator class for high-level API to TBaseSet.
    * This class is derived from STL iterators to additionally provide
    * a reference of the container to iterate on. This feature
    * is used to adjust iterators when the actual set gets reallocated due to a Detach()
@@ -484,8 +514,8 @@ public:
        pBaseSet->DValid("Iterator");
      }; 
 
-    /** Reimplement dereference */
-     const T* operator-> (void) const {
+     /** Reimplement dereference */ 
+      const T* operator-> (void) const {
 #ifdef FAUDES_DEBUG_CODE
        if(pBaseSet==NULL) {
          FD_ERR("TBaseSet<T,Cmp>::Iterator(" << this << "):operator->: invalid iterator: no baseset");
@@ -779,52 +809,107 @@ public:
    */
    virtual void ClrAttribute(const T& rElem);
 
-  /**
-   * Configure the element name tag.
-   * This method allows to overwrite the tag used for elements
-   * in XML IO. For usual, you will register derived class with
-   * the run-time-interface and set the elemen tag for XML IO.
-   *
-   * @param rTag
-   *   Name to set
-   */
-  virtual void XElementTag(const std::string& rTag);
-
-  /** 
-   * Get objects's type name. 
-   *
-   * Retrieve the faudes-type name from the type registry.
-   * Sets allow to overwrite the faudes-type identifier. This is allows
-   * for light-weight derived classes that do not need to be registered.
-   *
-   * @return 
-   *   Faudes-type name or empty string.
-   */
-  virtual const std::string& TypeName(void) const;
 
   /**
-   * Overwrite faudes-type name.
-   * This method is used to overwrite the faudes-type identifyer.
+   * Create a copy as plain STL set.
+   * This is virtual to allow overrides that address attributes.
    *
-   * @param rType
-   *   Faudes-type name to set
+   * @param
+   *   STL set to read from
    */
-  virtual void TypeName(const std::string& rType);
+   virtual void FromStl(const std::set<T,Cmp>& rStlSet);
 
-
-
+  /**
+   * Copy data to a plain STL set
+   * This is virtual to allow overrides that address attributes.
+   *
+   * @param rMap
+   *   STL set to read from
+   *   
+   */
+   virtual void ToStl(std::set<T,Cmp>& rStlSet) const;
+  
 
 protected:
 
 
   /** 
-   * Token output, see Type::DWrite for public wrappers.
+   * Token output for an individual element of the set. The default implementation
+   * casts the element to faudes::Type and uses the API thereof. This is meant for
+   * "small sets of large elements". For a more tailored ourput on "large sets of
+   * small elements", you most likely want to  re-implement DoWrite.
+   *
+   * @param rTw
+   *   Reference to TokenWriter
+   * @param rElem
+   *   The element to write
+   * @param rLabel
+   *   Label of section to write, defaults to ElemenTag
+   * @param pContext
+   *   Write context to provide contextual information
+   */
+  virtual void DoWriteElement(TokenWriter& rTw, const T& rElem, const std::string &rLabel="", const Type* pContext=0) const;
+
+  /** 
+   * Token output for an individual element of the set, strict XML variant. See also
+   * DoWriteElement
+   *
+   * @param rTw
+   *   Reference to TokenWriter
+   * @param rElem
+   *   The element to write
+   * @param rLabel
+   *   Label of section to write, defaults to ElemenTag
+   * @param pContext
+   *   Write context to provide contextual information
+   */
+  virtual void DoXWriteElement(TokenWriter& rTw, const T& rElem, const std::string &rLabel="", const Type* pContext=0) const;
+
+  /** 
+   * Token output for an individual element of the set, strict XML debug. See also
+   * DoWriteElement
+   *
+   * @param rTw
+   *   Reference to TokenWriter
+   * @param rElem
+   *   The element to write
+   * @param rLabel
+   *   Label of section to write, defaults to ElemenTag
+   * @param pContext
+   *   Write context to provide contextual information
+   */
+  virtual void DoDWriteElement(TokenWriter& rTw, const T& rElem, const std::string &rLabel="", const Type* pContext=0) const;
+
+  /**
+   * Token input for individual elemets.
    * Reimplement this function in derived classes for specific
-   * specific template parameters. By convention, the default label ""
-   * should be translated to a) the name of the set or b) some meaningful default, 
-   * eg "IndexSet" for a set of indices. The pContext pointer can de type-checked
-   * and interpreted, ie as a symboltable to provide symbolic names. It is also
+   * specific template parameters.
+   * The pContext pointer can de type-checked and interpreted, ie 
+   * as a symboltable to provide symbolic names. It is also
    * passed on to attributes.
+   *
+   * @param rTr
+   *   Reference to TokenReader
+   * @param rElem
+   *   Element tor read to
+   * @param rLabel
+   *   Label of section to read, defaults to name of set
+   * @param pContext
+   *   Read context to provide contextual information
+   */
+  virtual void DoReadElement(TokenReader& rTr, T& rElem, const std::string& rLabel, const Type* pContext);
+
+  /** 
+   * Token output, see Type::Write for public wrappers.
+   * The default implementation iterates over the individual elements and writes
+   * them by DoWriteElement. Reimplement this function in derived classes for a
+   * taylored output format.
+   *
+   * By convention, the default label "" should be translated to a) the name of the
+   * set or b) some meaningful default, eg "IndexSet" for a set of indices.
+   *
+   * The pContext pointer can de type-checked and interpreted, ie as a symboltable
+   * to provide symbolic names. It is also passed on to attributes.
    *
    * @param rTw
    *   Reference to TokenWriter
@@ -834,6 +919,19 @@ protected:
    *   Write context to provide contextual information
    */
   virtual void DoWrite(TokenWriter& rTw, const std::string& rLabel="", const Type* pContext=0) const;
+
+  /** 
+   * Token output, strict XML version
+   * Reimplement this function in derived classes for specific
+   * specific template parameters.
+   * @param rTw
+   *   Reference to TokenWriter
+   * @param rLabel
+   *   Label of section to write, defaults to name of set
+   * @param pContext
+   *   Write context to provide contextual information
+   */
+  virtual void DoXWrite(TokenWriter& rTw,const std::string& rLabel="", const Type* pContext=0) const;
 
   /** 
    * Token output, debugging see Type::DWrite for public wrappers.
@@ -895,9 +993,6 @@ protected:
 
 protected:
 
-
-  /** Name of this BaseSet */
-  std::string mMyName;
 
   /** Pointer on STL set to operate on */
   std::set<T,Cmp>* pSet;
@@ -964,34 +1059,17 @@ protected:
   /** Record that an iterator stops to refer to this TBaseSet */
   void DetachIterator(Iterator* pFit) const;
 
+  /** construct and record static members (the fiasco) */
+  static std::set< T, Cmp > * GlobalEmptySet(void);
 
+  /** construct and record static members (the fiasco) */
+  static std::map< T, AttributeVoid* > * GlobalEmptyAttributes(void);
 
-  /** Reimplment from type to use chache */
-  virtual const TypeDefinition* TypeDefinitionp(void) const;
+  /** construct and record static members (the fiasco) */
+  std::set< T, Cmp >* pGes;
 
-  /** Get name of elements (used for XML IO) */
-  virtual const std::string& XElementTag(void) const;
-
-  /** static empty STL set for default constructor */
-  static std::set<T,Cmp> msEmptySet;
-
-  /** static empty STL map for default constructor */
-  static std::map<T,AttributeVoid*> msEmptyAttributes;
-
-  /** static empty STL client list */
-  // std::list< TBaseSet<T,Cmp>* >* msEmptyClients;
-
-private:
-
-  /** TypeDefinition cache (should use guarded pointer here) */
-  const TypeDefinition* pTypeDefinition;
-
-  /** Current/cached name of elements (used protected accessor method) */
-  std::string  mXElementTag;
-
-  /** Current/cached faudes type-name */
-  std::string  mFaudesTypeName;
-
+  /** construct and record static members (the fiasco) */
+  std::map< T, AttributeVoid*  >* pGea;
 
 };
 
@@ -1125,7 +1203,6 @@ bool SetInclusion(const TBaseSet<T,Cmp>& rSetA, const TBaseSet<T,Cmp>& rSetB) {
 
 
 
-/** @} doxygen group */
 
 
 
@@ -1148,78 +1225,112 @@ Implementation of TBaseSet
 
 
 // faudes type std: new and cast
-FAUDES_TYPE_TIMPLEMENTATION_NEW(Void,THIS,Type,TEMP)
-FAUDES_TYPE_TIMPLEMENTATION_COPY(Void,THIS,Type,TEMP)
-FAUDES_TYPE_TIMPLEMENTATION_CAST(Void,THIS,Type,TEMP)
+FAUDES_TYPE_TIMPLEMENTATION_NEW(Void,THIS,ExtType,TEMP)
+FAUDES_TYPE_TIMPLEMENTATION_COPY(Void,THIS,ExtType,TEMP)
+FAUDES_TYPE_TIMPLEMENTATION_CAST(Void,THIS,ExtType,TEMP)
 
 // faudes type std: assignemnt (break cast)
 //TEMP THIS& THIS::Assign(const Type& rSrc) { this->Clear(); return *this;};
 //TEMP THIS& THIS::Assign(const THIS& rSrc) { DoAssign(rSrc); return *this;};
 
 // faudes type std: assignemnt (keep cast)
-FAUDES_TYPE_TIMPLEMENTATION_ASSIGN(Void,THIS,Type,TEMP)
-FAUDES_TYPE_TIMPLEMENTATION_EQUAL(Void,THIS,Type,TEMP)
+FAUDES_TYPE_TIMPLEMENTATION_ASSIGN(Void,THIS,ExtType,TEMP)
+FAUDES_TYPE_TIMPLEMENTATION_EQUAL(Void,THIS,ExtType,TEMP)
 
 
-// template statics: empty set
-TEMP std::set<T,Cmp>  THIS::msEmptySet=std::set<T,Cmp>();
-TEMP std::map<T,AttributeVoid*> THIS::msEmptyAttributes=std::map<T,AttributeVoid*>();
+// template static members (initialisation fiasco)
+TEMP std::set<T,Cmp> * THIS::GlobalEmptySet(void) {
+  static std::set<T,Cmp> ges;
+#ifdef FAUDES_DEBUG_CODE
+  static bool done=false;
+  if(!done) {
+    std::cerr << "BaseSet::GlobalEmptySet(): for " << typeid(ges).name() << " at " << &ges << std::endl;
+    done =true;
+  }
+#endif  
+  return &ges;
+}  
+
+// template static members (initialisation fiasco)
+TEMP std::map< T,AttributeVoid* > * THIS::GlobalEmptyAttributes(void) {
+  static std::map<T,AttributeVoid*> gea;
+#ifdef FAUDES_DEBUG_CODE
+  static bool done=false;
+  if(!done) {
+    std::cerr << "BaseSetGlobalEmptyAttributes(): for " << typeid(gea).name() << " at " << &gea << std::endl;
+    done =true;
+  }
+#endif  
+  return &gea;
+}
+
 
 // TBaseSet()
 TEMP THIS::TBaseSet(void) :
-  Type(),
-  pSet(&msEmptySet),  
+  ExtType(),
+  pSet(GlobalEmptySet()),  
   mpSet(NULL),
-  pAttributes(&msEmptyAttributes),
+  pAttributes(GlobalEmptyAttributes()),
   mpAttributes(NULL),
   pHostSet(this),
   mpClients(new std::list< TBaseSet<T,Cmp>* >),
   mDetached(false), 
   mLocked(false),
-  pTypeDefinition(NULL)
+  pGes(GlobalEmptySet()),
+  pGea(GlobalEmptyAttributes())
 {
   FAUDES_OBJCOUNT_INC("BaseSet");
-  FD_DC("TBaseSet(" << this << ")::TBaseSet()");
-  // other members
-  mMyName="BaseSet";
+  FD_DC("TBaseSet(" << this << ")::TBaseSet(): as " << typeid(*this).name() );
+  // overwrite base defaults
+  mElementTagDef="Element";
+  mObjectName="BaseSet";
+#ifdef FAUDES_DEBUG_CODE
+  DValid("Construct");
+#endif
 }
 
 // TBaseSet(filename)
 TEMP THIS::TBaseSet(const std::string& rFileName, const std::string& rLabel)  :
-  Type(),
-  pSet(&msEmptySet),  
+  ExtType(),
+  pSet(GlobalEmptySet()),  
   mpSet(NULL),
-  pAttributes(&msEmptyAttributes),
+  pAttributes(GlobalEmptyAttributes()),
   mpAttributes(NULL),
   pHostSet(this),
   mpClients(new std::list< TBaseSet<T,Cmp>* >),
   mDetached(false), 
-  mLocked(false), 
-  pTypeDefinition(NULL)
+  mLocked(false),
+  pGes(GlobalEmptySet()),
+  pGea(GlobalEmptyAttributes())
 {
   FAUDES_OBJCOUNT_INC("BaseSet");
   FD_DC("TBaseSet(" << this << ")::TBaseSet()");
   // other members
-  mMyName="BaseSet";
+  mElementTagDef="Element";
+  mObjectName="BaseSet";
   // do read etc ... this is a dummy anyway
   Read(rFileName,rLabel);  
 }
 
 // TBaseSet(rOtherSet)
 TEMP THIS::TBaseSet(const TBaseSet& rOtherSet) : 
-  Type(rOtherSet),
-  pSet(&msEmptySet),  
-  mpSet(NULL),  
-  pAttributes(&msEmptyAttributes),
+  ExtType(rOtherSet),
+  pSet(GlobalEmptySet()),  
+  mpSet(NULL),
+  pAttributes(GlobalEmptyAttributes()),
   mpAttributes(NULL),
   pHostSet(this),
-  mpClients(new std::list< TBaseSet<T,Cmp>* >), // small detour ... for readability
+  mpClients(new std::list< TBaseSet<T,Cmp>* >),
   mDetached(false), 
   mLocked(false),
-  pTypeDefinition(NULL)
+  pGes(GlobalEmptySet()),
+  pGea(GlobalEmptyAttributes())
 {
   FAUDES_OBJCOUNT_INC("BaseSet");
   FD_DC("TBaseSet(" << this << ")::TBaseSet(rOtherSet " << &rOtherSet << "): fake copy construct");
+  // overwrite base defaults
+  mElementTagDef="Element";
+  mObjectName="BaseSet";
   // run assignment
   DoAssign(rOtherSet);
 #ifdef FAUDES_DEBUG_CODE
@@ -1253,12 +1364,19 @@ TEMP THIS::~TBaseSet(void) {
 
 // fake copy
 TEMP void THIS::DoAssign(const THIS& rSourceSet) {
-  FD_DC("TBaseSet(" << this << "/" << this->Name() << ")::DoAssign(rOtherSet " << &rSourceSet << "): shallow copy -- src attr# " << rSourceSet.pAttributes->size());
+  FD_DC("TBaseSet(" << this << "[" << this->Name() << "])::DoAssign(rOtherSet " << &rSourceSet << "): shallow copy -- src attr# " << rSourceSet.pAttributes->size());
   FD_DC("TBaseSet():DoAssign(): " << typeid(*this->AttributeType()).name()  << " <== "  << typeid(*rSourceSet.AttributeType()).name()); 
+#ifdef FAUDES_DEBUG_CODE
+  DValid("PreFakeAssignment");
+#endif
   // bail out on selfref
-  if(this==&rSourceSet) return;
+  if(this==&rSourceSet) {
+    FD_DC("TBaseSet():DoAssign(): bail out on identical objects"); 
+    return;
+  }
   // other members 
-  mMyName=rSourceSet.mMyName;
+  mObjectName=rSourceSet.mObjectName;
+  mElementTagDef=rSourceSet.mElementTagDef;
   // bail out on common shared data
   if(pHostSet==rSourceSet.pHostSet) return;
   // become independant
@@ -1279,7 +1397,6 @@ TEMP void THIS::DoAssign(const THIS& rSourceSet) {
     delete mpClients;
     mpClients=NULL;
   }
-
   // if attribute type matches, use source as host
   if(typeid(*rSourceSet.AttributeType())==typeid(*this->AttributeType())) {
     pHostSet=rSourceSet.pHostSet; 
@@ -1287,7 +1404,7 @@ TEMP void THIS::DoAssign(const THIS& rSourceSet) {
     pSet=rSourceSet.pSet;
     pAttributes=rSourceSet.pAttributes;
   }
-  // else do a deep copy (avoid mixed typed attributeb maps)
+  // else do a deep copy (avoid mixed typed attribute maps)
   else {
     mpSet = new std::set<T,Cmp>();
     *mpSet = *rSourceSet.pSet;     
@@ -1299,8 +1416,10 @@ TEMP void THIS::DoAssign(const THIS& rSourceSet) {
         (*mpAttributes)[ait->first]=attr;
       }
     }
+    // todo: if element is of faudes type, copy object names
     pAttributes = mpAttributes;
     pHostSet = this;
+    mpClients= new std::list< TBaseSet<T,Cmp>* >; // still fixing bugs in 2025 (?)
   }
   // fix iterators (invalidate)
   typename std::set< Iterator* >::iterator iit;
@@ -1340,7 +1459,7 @@ TEMP void THIS::Detach(DetachMode flag) const {
 #ifdef FAUDES_DEBUG_CODE
   // might have missed reference detach
   if(pHostSet==this)
-  if(pSet!=&msEmptySet)
+  if(pSet!=pGes)
   if(mpClients)
   if(mpClients->empty()) {
     FD_ERR("TBaseSet(" << this << ")::Detach(): missed detach (?)");
@@ -1372,7 +1491,7 @@ TEMP void THIS::Detach(DetachMode flag) const {
     THIS* newhost = *mpClients->begin();
 #ifdef FAUDES_DEBUG_CODE
     if(newhost->mpClients)
-      FD_ERR("TBaseSet(" << this << ")::Detach(): new host used to heve clients (?)");
+      FD_ERR("TBaseSet(" << this << ")::Detach(): new host used to have clients (?)");
 #endif
     newhost->pHostSet=newhost;
     newhost->mpSet=scopy; 
@@ -1381,6 +1500,7 @@ TEMP void THIS::Detach(DetachMode flag) const {
     newhost->pAttributes=acopy;
     newhost->mpClients=mpClients;
     newhost->DetachClient(newhost);
+    fake_const->mpClients=NULL;
     // set other users to use the new host
     typename std::list< THIS* >::const_iterator rit;
     for(rit=newhost->mpClients->begin();rit!=newhost->mpClients->end(); ++rit) {
@@ -1512,6 +1632,7 @@ TEMP inline void THIS::RelinkClients(void) {
   newhost->pAttributes=pAttributes;
   newhost->mpClients=mpClients;
   newhost->DetachClient(newhost);
+  mpClients=NULL;
   // set other users to new newhost
   typename std::list< THIS* >::const_iterator rit;
   for(rit=newhost->mpClients->begin();rit!=newhost->mpClients->end(); ++rit) {
@@ -1524,7 +1645,6 @@ TEMP inline void THIS::RelinkClients(void) {
   pAttributes=newhost->pAttributes;
   mpAttributes=NULL;
   newhost->AttachClient(this);
-  mpClients=NULL;
 #ifdef FAUDES_DEBUG_CODE
   DValid("PostRelink");
 #endif
@@ -1577,7 +1697,7 @@ TEMP inline void THIS::DetachClient(TBaseSet* pRef) const {
     break; 
   }
   // figure detached status
-  if(mpClients->empty() && (pSet!=&msEmptySet)) fake_const->mDetached=true;
+  if(mpClients->empty() && (pSet!=pGes)) fake_const->mDetached=true;
   FD_DC("TBaseSet::DetachClient(" << this << "): done.");
 }
 
@@ -1601,20 +1721,29 @@ TEMP void THIS::DValid(const std::string& rMessage) const {
   typename std::set< Iterator* >::const_iterator iit;
   typename std::list< THIS* >::const_iterator rit;
 #ifdef FAUDES_DEBUG_CONTAINER
-  std::cerr << "TBaseSet(" << this << ")::DValid(): " << rMessage << " source " 
-     << pHostSet << " " << (pHostSet->pSet==&msEmptySet ? "+e+" : "+f+") << 
-        (mLocked ? " +l+" : " ") << (mDetached ? " +d+" : " ") << " -- refs ";
+  std::cerr << "TBaseSet(" << this << ")::DValid(): " << rMessage <<
+    " host " << pHostSet << (pHostSet == this ? " +s+ " : " ")  << 
+	(pHostSet->pSet==pHostSet->pGes ? "+e+ " : "+f+ ") << 
+    (mLocked ? "+l+ " : " ") << (mDetached ? "+d+" : " ")
+     << " stl at " << pSet << " own data " << mpSet << " ges " << pGes;
+  std::cerr <<  " -- refs ";
   if(pHostSet->mpClients)
   for(rit=pHostSet->mpClients->begin(); rit!=pHostSet->mpClients->end(); ++rit)
     std::cerr << *rit << " ";
   std::cerr << "-- its ";
   for(iit=mIterators.begin(); iit!=mIterators.end(); ++iit)
     std::cerr << *iit << " ";
-  std::cerr << "-- attr #" << pAttributes->size();
+  std::cerr << "-- attr at " << pAttributes;
+  std::cerr << "(#" << pAttributes->size() << ") ";
   if(mpAttributes) std::cerr << "(" << mpAttributes->size() << ") ";
   else std::cerr << " ";
-  std::cerr << (pAttributes==&msEmptyAttributes ? "+e+ " : "+f+ ") << std::endl;
+  std::cerr << (pAttributes==pGea ? "+e+ " : "+f+ ") << std::endl;
 #endif
+  // lost global empty set
+  if(pGes!=GlobalEmptySet()) {
+    FD_WARN("BaseSet("<< this << "," << rMessage <<"): lost empty set: " << pGes);
+    abort();
+  }
   // iterators, that dont refer to me as basset
   for(iit=mIterators.begin(); iit!=mIterators.end(); ++iit) {
     if((*iit)->pBaseSet!=this) {
@@ -1672,17 +1801,17 @@ TEMP void THIS::DValid(const std::string& rMessage) const {
     abort();
   }
   // is base but has no own data
-  if((pHostSet == this) && (mpSet==NULL) && (pSet!=&msEmptySet)) {
+  if((pHostSet == this) && (mpSet==NULL) && (pSet!=pGes)) {
     FD_WARN("BaseSet(" << this << "," << rMessage << "): no data");
     abort();
   }
   // is base, but has no client list
-  if((pHostSet==this) && (pSet!=&msEmptySet) && (mpClients==NULL)) {
+  if((pHostSet==this) && (pSet!=pGes) && (mpClients==NULL)) {
     FD_WARN("BaseSet(" << this << "," << rMessage << "): host with no client list");
     abort();
   }
   // is base but own data pointer mismatch
-  if((pHostSet == this) && (pSet != mpSet) && (pSet!=&msEmptySet)) {
+  if((pHostSet == this) && (pSet != mpSet) && (pSet!=pGes)) {
     FD_WARN("BaseSet(" << this << "," << rMessage << "): data pointer mismatch A");
     abort();
   }
@@ -1719,7 +1848,7 @@ TEMP void THIS::DValid(const std::string& rMessage) const {
     abort();
   }
   // error in detached flag
-  if(mDetached && (pSet==&msEmptySet)) {
+  if(mDetached && (pSet==pHostSet->pGes)) {
     FD_WARN("BaseSet(" << this << "," << rMessage << "): detached empty set");
     abort();
   }
@@ -1729,12 +1858,12 @@ TEMP void THIS::DValid(const std::string& rMessage) const {
     abort();
   }
   // invalid emptyset
-  if(!msEmptySet.empty()) {
+  if(!pGes->empty()) {
     FD_WARN("BaseSet(" << this << "," << rMessage << "): invalid empty set");
     abort();
   }
   // invalid emptyset
-  if(!msEmptyAttributes.empty()) {
+  if(!GlobalEmptyAttributes()->empty()) {
     FD_WARN("BaseSet(" << this << "," << rMessage << "): invalid empty attributes");
     abort();
   }
@@ -1744,69 +1873,26 @@ TEMP void THIS::DValid(const std::string& rMessage) const {
 }
 
 
-
-// Name
-TEMP const std::string& THIS::Name(void) const {
-  return mMyName;
-}
-		
-// Name
-TEMP void THIS::Name(const std::string& rName) {
-  mMyName = rName;
-}
-  
-
-// TypeDefinitionp()
-// Note: fake const construct
-TEMP const TypeDefinition* THIS::TypeDefinitionp(void) const {
-  if(!pTypeDefinition) {
-    // provide fake const
-    THIS* fake_const = const_cast< THIS* >(this);
-    fake_const->pTypeDefinition=TypeRegistry::G()->Definitionp(*this);
-  }
-  return pTypeDefinition;
-}
-
-// ElementTag
-TEMP const std::string& THIS::XElementTag(void) const {
-  if(mXElementTag.empty()) {
-    // provide fake const
-    THIS* fake_const = const_cast< THIS* >(this);
-    fake_const->mXElementTag="Element";
-    const TypeDefinition* fdp=TypeDefinitionp();
-    if(fdp) fake_const->mXElementTag=fdp->XElementTag();
-  }
-  return mXElementTag;
-}
-
-// ElementTag
-TEMP void THIS::XElementTag(const std::string& rTag) {
-  mXElementTag=rTag;
-}
-
-
-// Faudes Type
-TEMP const std::string& THIS::TypeName(void) const {
-  if(mFaudesTypeName.empty()) {
-    // provide fake const
-    THIS* fake_const = const_cast< THIS* >(this);
-    const TypeDefinition* fdp=TypeDefinitionp();
-    if(fdp) fake_const->mFaudesTypeName=fdp->Name();
-  }
-  return mFaudesTypeName;
-}
-
-// ElementTag
-TEMP void THIS::TypeName(const std::string& rType) {
-  mFaudesTypeName=rType;
-}
-
-
 // Str
 TEMP std::string THIS::Str(const T& rElem) const { 
   (void) rElem;
-  std::string res=""; 
+  std::string res="E"; 
   return res; 
+}
+
+// Str
+TEMP std::string THIS::Str(void) const { 
+  std::stringstream str;
+  str << "[" << Name() << "]{ ";
+  Iterator eit=Begin();
+  Iterator eit_end=End();
+  if(Size()>0) while(true) {
+    str << Str(*(eit++));
+    if(eit==eit_end) break;
+    str << ", ";
+  }
+  str << " }";
+  return str.str();
 }
 
 // Size()
@@ -1819,23 +1905,89 @@ TEMP bool THIS::Empty(void) const {
   return pSet->empty();
 }
 
+// DoWriteElement(tw,cpontext)
+TEMP void THIS::DoWriteElement(TokenWriter& rTw,const T& rElem, const std::string& rLabel, const Type* pContext) const {
+  // test whether we can cast to faudes Type
+  const Type* ep= CastToType<T>::ConstPointer(&rElem);
+  if(ep!=nullptr) {
+    ep->Write(rTw,rLabel,pContext);
+    return;
+  }
+  // fail if not reimplemented
+  std::stringstream errstr;
+  errstr << "used but not reimplemented" << typeid(this).name() << std::endl;
+  throw Exception("BaseSet::DoWriteElement", errstr.str(), 61);
+}
+
+// DoXWriteElement(tw,cpntext)
+TEMP void THIS::DoXWriteElement(TokenWriter& rTw,const T& rElem, const std::string& rLabel, const Type* pContext) const {
+  // test whether we can cast to faudes Type
+  const Type* ep= CastToType<T>::ConstPointer(&rElem);
+  if(ep!=nullptr) {
+    ep->XWrite(rTw,rLabel,pContext);
+    return;
+  }
+  // fail if not reimplemented
+  std::stringstream errstr;
+  errstr << "used but not reimplemented" << typeid(this).name() << std::endl;
+  throw Exception("BaseSet::DoXWriteElement", errstr.str(), 61);
+}
+
+// DoDWriteElement(tw,cpntext)
+TEMP void THIS::DoDWriteElement(TokenWriter& rTw,const T& rElem, const std::string& rLabel, const Type* pContext) const {
+  // test whether we can cast to faudes Type
+  const Type* ep= CastToType<T>::ConstPointer(&rElem);
+  if(ep!=nullptr) {
+    ep->DWrite(rTw,rLabel,pContext);
+    return;
+  }
+  // fail if not reimplemented
+  std::stringstream errstr;
+  errstr << "used but not reimplemented" << typeid(this).name() << std::endl;
+  throw Exception("BaseSet::DoDWriteElement", errstr.str(), 61);
+}
 
 // DoWrite(tw,rLabel,cpntext)
 TEMP void THIS::DoWrite(TokenWriter& rTw,const std::string& rLabel, const Type* pContext) const {
-  (void) pContext;
   std::string label=rLabel;
   if(label=="") label=Name(); 
   if(label=="") label="BaseSet"; 
+  std::string etstr=ElementTag();
   FD_DC("TBaseSet(" << this << ")::DoWrite(..): section " << label << " #" << Size());
   rTw.WriteBegin(label);
+  // iterate entries to write
+  Iterator it;
+  for (it = Begin(); it != End(); ++it) {
+    DoWriteElement(rTw, *it, etstr, pContext);
+  }
   rTw.WriteEnd(label);
 }
 
 
+// DoWrite(tw,rLabel,cpntext)
+TEMP void THIS::DoXWrite(TokenWriter& rTw,const std::string& rLabel, const Type* pContext) const {
+  // Set up outer tag
+  Token btag=XBeginTag(rLabel,"BaseSet");
+  rTw.Write(btag);
+  FD_DC("BaseSet(" << this << ")::DoXWrite(..): section " << btag.StringValue() << " #" << Size());
+  // iterate entries to write
+  std::string etstr=ElementTag();
+  Iterator it;
+  for (it = Begin(); it != End(); ++it) {
+    DoXWriteElement(rTw, *it, etstr, pContext);
+  }
+  rTw.WriteEnd(btag.StringValue());
+}
+
 // DoDWrite(tw, label, context)
 TEMP void THIS::DoDWrite(TokenWriter& rTw, const std::string& rLabel, const Type* pContext) const {
-  (void) pContext;
-  (void) rLabel;
+  std::string label=rLabel;
+  if(label=="") label=Name(); 
+  if(label=="") label="BaseSet"; 
+  std::string etstr=ElementTag();
+  FD_DC("TBaseSet(" << this << ")::DoDWrite(..): section " << label << " #" << Size());
+  rTw.WriteBegin(label);
+  // stats
   BASE::DoSWrite(rTw);
   size_t shares=0;
   if(pHostSet->mpClients) shares=pHostSet->mpClients->size();
@@ -1848,6 +2000,12 @@ TEMP void THIS::DoDWrite(TokenWriter& rTw, const std::string& rLabel, const Type
 #ifdef FAUDES_DEBUG_CODE
   DValid();
 #endif
+  // elements
+  Iterator it;
+  for (it = Begin(); it != End(); ++it) {
+    DoDWriteElement(rTw, *it, etstr, pContext);
+  }
+  rTw.WriteEnd(label);
 }
 
 // DoSWrite()
@@ -1865,15 +2023,65 @@ TEMP void THIS::DoSWrite(TokenWriter& rTw) const {
   } 
 }
 
+
+// DoInsertElement(rTr, rElem, rLabel, pContext)
+TEMP void THIS::DoReadElement(TokenReader& rTr, T& rElem, const std::string& rLabel, const Type* pContext) {
+  // test whether we can cast to faudes Type
+  Type* ep= CastToType<T>::Pointer(&rElem);
+  if(ep!=nullptr) {
+    ep->Read(rTr,rLabel,pContext);
+    return;
+  }
+  // fail if not reimplemented
+  std::stringstream errstr;
+  errstr << "used but not reimplemented" << typeid(this).name() << std::endl;
+  throw Exception("BaseSet::DoReadElement", errstr.str(), 61);
+}
+
 // DoRead(rTr, rLabel, pContext)
 TEMP void THIS::DoRead(TokenReader& rTr, const std::string& rLabel, const Type* pContext) {
-  (void) pContext;
+  // set up defaults
   std::string label=rLabel;
-  if(label=="") label=Name(); 
-  if(label=="") label="BaseSet"; 
+  std::string ftype=TypeName();
+  std::string etstr=ElementTag();
+  // figure element type
+  std::string etype="";
+  if(TypeRegistry::G()->Exists(ftype)) {
+    etype= TypeRegistry::G()->ElementType(ftype);
+  }
+  // figure section
+  Token token;
+  if(label=="") {
+    rTr.Peek(token);
+    if(token.Type()==Token::Begin) label=token.StringValue();
+  }
+  if(label=="") label=ftype; 
   Name(label);
-  rTr.ReadBegin(label); 
-  rTr.ReadEnd(label); 
+  // read begin
+  rTr.ReadBegin(label,token); 
+  if(token.ExistsAttributeString("name"))
+    Name(token.AttributeStringValue("name"));
+  FD_DC("BaseSet(" << typeid(*this).name() << ")::DoRead(..): section " << label << " elements " << etstr);
+  // loop tokens
+  while(!rTr.Eos(label)) {
+    rTr.Peek(token);
+    // read element section
+    if(token.IsBegin(etstr)) {
+      FD_DC("TBaseSet(" << typeid(*this).name()  << ")::DoRead(..): inserting element");
+      // prepare new element
+      T elem;
+      DoReadElement(rTr,elem,etstr,pContext);
+      Insert(elem);
+      FD_DC("TBaseSet(" << typeid(*this).name()  << ")::DoRead(..): inserting element: ok");
+      continue;
+    }
+    // cannot process token
+    std::stringstream errstr;
+    errstr << "Invalid token of type " << token.Type() << " at " << rTr.FileLine();
+    throw Exception("BaseSet::DoRead", errstr.str(), 50);
+  }
+  rTr.ReadEnd(label);
+  FD_DC("BaseSet(" << this << ")::DoRead(tr," << label << ", " << pContext << "): done");
 }
 
 // ThisIterator (tmoor 201308: this is by default an attached iterator)
@@ -1899,7 +2107,7 @@ TEMP void THIS::Clear(void) {
   DValid("PreClear");
 #endif
   // special case: empty anyway
-  if(pSet==&msEmptySet) return;
+  if(pSet==pHostSet->pGes) return;
 
   FD_DC("TBaseSet(" << this << ")::Clear(): doit");
   FD_DC("TBaseSet(" << this << ")::Clear(): type " << typeid(*this).name());
@@ -1927,8 +2135,8 @@ TEMP void THIS::Clear(void) {
     mpAttributes=NULL;
   }
   // set to empty set
-  pSet=&msEmptySet;
-  pAttributes=&msEmptyAttributes;
+  pSet=pGes;
+  pAttributes=GlobalEmptyAttributes();
   // fix iterators (invalidate)
   typename std::set< Iterator* >::iterator iit;
   for(iit=mIterators.begin(); iit!=mIterators.end(); ++iit) {
@@ -1943,6 +2151,11 @@ TEMP void THIS::Clear(void) {
   FD_DC("TBaseSet(" << this << ")::Clear(): done");
 }
 
+
+//test for default configuration
+TEMP bool THIS::IsDefault(void) const {
+  return pSet->empty();
+}
 
 //Valid(elem)
 TEMP inline bool  THIS::Valid(const T& rElem) const {
@@ -2078,6 +2291,27 @@ TEMP void THIS::RestrictSet(const TBaseSet& rOtherSet) {
   }
 }
 
+
+//Disjoint(set)
+TEMP bool THIS::Disjoint(const TBaseSet& rOtherSet) const {
+  FD_DC("TBaseSet(" << this << ")::Disjoint(" << &rOtherSet << ")");
+  // trivial cases
+  if(pSet->empty()) return true;
+  if(rOtherSet.pSet->empty()) return true;
+  if(*pSet->rbegin()<*rOtherSet.pSet->begin()) return true;
+  if(*rOtherSet.pSet->rbegin()<*pSet->begin()) return true;
+  if(rOtherSet.pSet==pSet) return false;
+  // iterate
+  iterator it = pSet->begin();
+  iterator oit = rOtherSet.pSet->begin();
+  while ((it != pSet->end()) && (oit != rOtherSet.pSet->end())) {
+    if (*it < *oit) { it++; continue;}
+    if (*it == *oit) { return false; }
+    // if (*it > *oit)
+    oit++;
+  }
+  return true;
+}
 
 //Find(elem)
 TEMP typename THIS::Iterator THIS::Find(const T& rElem) const {
@@ -2252,7 +2486,7 @@ TEMP void THIS::Attributes(const TBaseSet<T,Cmp>& rOtherSet) {
 TEMP AttributeVoid* THIS::Attributep(const T& rElem) { 
   (void) rElem;
   std::stringstream errstr;
-  errstr << "cannot get attribute for TBaseSet \"" << mMyName  << "\" type " << typeid(*this).name();
+  errstr << "cannot get attribute for TBaseSet \"" << mObjectName  << "\" type " << typeid(*this).name();
   throw Exception("TBaseSet::Attributep(rElem)", errstr.str(), 63);  
   // dummy: will through exception before
   static AttributeVoid attr; 
@@ -2305,7 +2539,7 @@ TEMP const AttributeVoid* THIS::DoAttribute(const T& rElem) const {
 TEMP AttributeVoid* THIS::DoAttributeExplicit(const T& rElem) {
   FD_DC("TBaseSet::DoAttributeExplicit(elem)");
 #ifdef FAUDES_DEBUG_CODE
-  if(this->pAttributes!=this->::mpAttributes) {
+  if(this->pAttributes!=this->mpAttributes) {
     FD_ERR("TBaseSet::DoAttributeExplicit(elem): attributes not detached");
     abort();
   }
@@ -2323,7 +2557,7 @@ TEMP AttributeVoid* THIS::DoAttributeExplicit(const T& rElem) {
 
 // implement attributes: set  (assume detached)
 TEMP void THIS::DoAttribute(const T& rElem, const Type* pAttr) {
-  FD_DC("TBaseSet::DoAttribute([v] " << this->Str(rElem) << ", ...)");
+  FD_DC("TBaseSet::DoAttribute([v] " << this->EStr(rElem) << ", ...)");
 #ifdef FAUDES_DEBUG_CODE
   if(this->pAttributes!=this->mpAttributes) {
     FD_ERR("TBaseSet::DoAttribute([v] set): attributes not detached");
@@ -2341,7 +2575,7 @@ TEMP void THIS::DoAttribute(const T& rElem, const Type* pAttr) {
     oldattr=ait->second;
   // set to default, case 1
   if(newattr==NULL) {
-    FD_DC("TBaseSet::DoAttribute([v] " << this->Str(rElem) << ", ...): default 1");
+    FD_DC("TBaseSet::DoAttribute([v] " << this->EStr(rElem) << ", ...): default 1");
     if(oldattr==NULL) return;
     delete oldattr;
     this->pAttributes->erase(ait);
@@ -2349,13 +2583,13 @@ TEMP void THIS::DoAttribute(const T& rElem, const Type* pAttr) {
   }  
   // set to default, case 2
   if(newattr->IsDefault()) {
-    FD_DC("TBaseSet::DoAttribute([v] " << this->Str(rElem) << ", ...): default 2");
+    FD_DC("TBaseSet::DoAttribute([v] " << this->EStr(rElem) << ", ...): default 2");
     if(oldattr==NULL) return;
     delete oldattr;
     this->pAttributes->erase(ait);
     return;
   }  
-  FD_DC("TBaseSet::DoAttribute([v] " << this->Str(rElem) << ", ...): " << newattr->ToString());
+  FD_DC("TBaseSet::DoAttribute([v] " << this->EStr(rElem) << ", ...): " << newattr->ToString());
   // prepare attribute and set
   if(oldattr==NULL) {
     AttributeVoid* attr = this->AttributeType()->New();
@@ -2364,8 +2598,22 @@ TEMP void THIS::DoAttribute(const T& rElem, const Type* pAttr) {
     return;
   }
   // plain set     
-  FD_DC("TBaseSet::DoAttribute([v] " << this->Str(rElem) << ", ...): " << newattr->ToString());
+  FD_DC("TBaseSet::DoAttribute([v] " << this->EStr(rElem) << ", ...): " << newattr->ToString());
   oldattr->Assign(*newattr);
+}
+
+// read STL
+TEMP void THIS::FromStl(const std::set<T,Cmp>& rStlSet) {
+  Clear();
+  typename std::set<T,Cmp>::const_iterator it;
+  it=rStlSet.begin();
+  while(it!=rStlSet.end()) 
+    Insert(*(it++));
+}
+
+// write STL
+TEMP void THIS::ToStl(std::set<T,Cmp>& rStlSet) const {
+  rStlSet= *pSet;
 }
 
 
@@ -2378,4 +2626,9 @@ TEMP void THIS::DoAttribute(const T& rElem, const Type* pAttr) {
 
 } // namespace faudes
 
+
+//#undef FAUDES_DEBUG_CODE
+//#undef FAUDES_DEBUG_CONTAINER
+
 #endif 
+

@@ -1,9 +1,9 @@
 /** @file cfl_basevector.h @brief Class TBaseVector */
 
 
-/* FAU Discrete Event Systems Library (libfaudes)
+/* FAU Discrete Event Systems Library (libFAUDES)
 
-   Copyright (C) 2009  Thomas Moor
+   Copyright (C) 2009, 2025  Thomas Moor
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,11 @@
 #include "cfl_attributes.h"
 #include <vector>
 #include <algorithm>
+
+// fix mingw toochain
+#ifdef THIS
+#undef THIS
+#endif  
 
 namespace faudes {
 
@@ -67,11 +72,15 @@ namespace faudes {
  *
  */
 
-class FAUDES_API vBaseVector : public Type {
+class FAUDES_API vBaseVector : public ExtType {
 
-FAUDES_TYPE_DECLARATION(Void,vBaseVector,Type)
+FAUDES_TYPE_DECLARATION(Void,vBaseVector,ExtType)
 
 public:
+
+  using ExtType::operator=;
+  using ExtType::operator==;
+  using ExtType::operator!=;
 
   /**
    * Constructor. 
@@ -81,8 +90,12 @@ public:
   /**
    * Copy-constructor. 
    *
+   * This will copy the actual elements and we will take ownership of
+   * the copies. If the elements are fauddes sets, the performance penalty
+   * will only show oncle we write to an element.
+   *
    * @param rOtherVector 
-   *    Source to copy from
+   *    Source to copy from.
    */
   vBaseVector(const vBaseVector& rOtherVector);
 
@@ -94,12 +107,22 @@ public:
    * @param rLabel
    *   Section for the set in the file; 
    */
-  vBaseVector(const std::string& rFilename, const std::string& rLabel = "BaseVector");
+  vBaseVector(const std::string& rFilename, const std::string& rLabel = "Vector");
 
   /**
    * Virtual destructor
    */
   virtual ~vBaseVector(void);
+
+  /**
+   * Assign by reference
+   *
+   * This method will take references from the source entry, i.e., it will not take
+   * copies and will not attain ownership. The caller is hence responsible for the
+   * livetime of the elements. To obtain a full copy, use the copy constror or Assign()
+   * instead.
+   */
+  void AssignByReference(vBaseVector& rSourceVector);
 
   /**
    * Prototype for vector entries.
@@ -111,7 +134,6 @@ public:
    */
   virtual const Type* Elementp(void) const;
 
-
   /**
    * Prototype for vector entries.
    * This is a convenience wrapper for Elementp.
@@ -120,7 +142,6 @@ public:
    *    Element protoype
    */
   virtual const Type& Element(void) const;
-
 
   /**
    * Factory method for vector entries.
@@ -142,29 +163,12 @@ public:
    */
   virtual bool ElementTry(const Type& rElement) const;
 
-
-  /** 
-   * Return name of vBaseVector 
-   * 
-   * @return
-   *   Name of vBaseVector
-   */
-  const std::string& Name(void) const;
-        
-  /**
-   * Set name of vBaseVector
-   *
-   * @param rName
-   *   Name to set
-   */
-  void Name(const std::string& rName);
-
   /** 
    * Clear all vector
    */
   virtual void Clear(void);
       
-    /**
+  /**
    * Get size of vector.
    *
    * @return 
@@ -184,7 +188,16 @@ public:
   void Size(Idx len);
 
   /** 
-   * Check if the vBaseVector ist Empty 
+   * Check for default configuration aka empty
+   *
+   * @return 
+   *   True if empty
+   */
+  bool IsDefault(void) const;
+
+  /** 
+   * Check if the vBaseVector is Empty
+   * (amounts to the default configuration)
    *
    * @return 
    *   True if empty
@@ -276,7 +289,7 @@ public:
 
   /** 
    * Insert specified entry.
-   * This method takes a copy of the entry to replace and the
+   * This method takes a copy of the entry to be inserted and the
    * vector becomes the owner of the copy.
    *
    * @param pos
@@ -289,12 +302,10 @@ public:
    */
   virtual void Insert(const Position& pos, const Type& rElem);
 
-  /** 
+  /**
    * Insert specified entry.
-   * This method avoids to copy the entry to replace and only records the reference.
-   * The vector does not take ownership of the new entry. I.e., when the vector is destroyed, or the
-   * entry is deleted from the vector, the entry itself remains allocated.
-   *
+   * This method avoids to make a copy and inserts only a reference. The caller
+   * remains the owner and is responsable for destruction.
    *
    * @param pos
    *    Position at which to insert
@@ -304,8 +315,8 @@ public:
    *   - Position out of range (id 69)
    *   - Cannot cast element type (63)
    */
-  virtual void Insert(const Position& pos, Type* rElem);
-
+  virtual void Insert(const Position& pos, Type* pElem);
+  
   /** 
    * Insert specified entry.
    * This method reads the sepcified entry from file and the
@@ -396,9 +407,31 @@ public:
   virtual void Append(const std::string& rFileName);
 
   /** 
+   * Find element.
+   * This method iterates through the vector to find a matching element. This is
+   * generally inefficient, consider to use an ordered set instead.
+   *
+   * @param rElem
+   *    Element to serach for
+   * @return
+   *    Position on success (or >= Size() for not found)
+   * @exception Exception
+   *   - Cannot cast element type (63)
+   */
+  virtual Position  Find(const Type& rElem);
+
+  /**
+   * Cnsolidate by removing doublets.
+   * This method iterates through the vector to find ad eliminate semantical doublets; i.e., it
+   * refers to equality as implementyed by the faudes type method DoEqual. This is
+   * generally inefficient, consider to use an ordered set instead.
+   */
+  virtual void EraseDoublets(void);
+
+  /** 
    * Specify a filename.
-   * When each entry has a filenam specified,
-   * file io of the vector will be to indivudual files.
+   * When each entry has a filename specified,
+   * file io of the vector will be to individual files.
    *
    * @param pos
    *    Position of entry
@@ -423,7 +456,7 @@ public:
 
   /**
    * Take ownership of all entries.
-   * Thsi method will take ownership of all entries, including those, that
+   * This method will take ownership of all entries, including those, that
    * have been set by pointer reference. When the vector is destructed, all
    * entries will be destructed, too. However, write access may invalidate 
    * element pointers.
@@ -484,6 +517,21 @@ protected:
    */
   virtual void DoWrite(TokenWriter& rTw, const std::string& rLabel="", const Type* pContext=0) const;
 
+  /** 
+   * Token output strict XML, see Type::XWrite for public wrappers.
+   * The method assumes that the type parameter is a faudes type and uses
+   * the provide writed method per entry. Reimplement this function in derived 
+   * classes for non-faudes type vectors.
+   *
+   * @param rTw
+   *   Reference to TokenWriter
+   * @param rLabel
+   *   Label of section to write, defaults to name of set
+   * @param pContext
+   *   Write context to provide contextual information
+   */
+  virtual void DoXWrite(TokenWriter& rTw, const std::string& rLabel="", const Type* pContext=0) const;
+
   /**
    * Token input, see Type::Read for public wrappers.
    * The method assumes that the type parameter is a faudes type and uses
@@ -503,8 +551,21 @@ protected:
    */
   virtual void DoRead(TokenReader& rTr, const std::string& rLabel = "", const Type* pContext=0);
 
-  /** Assignment method  */
+  /** Assignment method  (we will take copies and own all those thereafter) */
   void DoAssign(const vBaseVector& rSourceVector);
+
+  /**
+   * Test equality of configuration data.
+   *
+   * To be equal, all elements must match.
+   * 
+   * @param rOther 
+   *    Other object to compare with.
+   * @return 
+   *   True on match.
+   */
+  bool DoEqual(const vBaseVector& rOther) const;
+
 
   /** Internal entry data type */
   class ElementRecord {
@@ -519,6 +580,19 @@ protected:
 
   /** convenience typedef */
   typedef std::vector<ElementRecord>::iterator iterator;
+
+private:
+
+  /** Current/cached faudes type-name */
+  std::string  mFaudesTypeName;
+
+  /** Current/cached name of elements (use protected accessor methods for caching) */
+  std::string  mElementTag;
+
+protected:  
+
+  /** Defauft name of elements (if not over written by registry) */
+  std::string  mElementTagDef;
 
 private:
 
@@ -538,10 +612,10 @@ private:
  * Vector template.
  *
  * The vector templates specializes the bass vBaseVector in that it uses the template
- * paremeter to specify the type of its entries. See vBaseVector for element access
+ * parameter to specify the type of its entries. See vBaseVector for element access
  * methods.
  *
- * TVectorSet serves is used to implement the libFaudes vectors
+ * TBaseVector is used to implement the libFAUDES vectors
  * - GeneratorVector (vector or generators) 
  * - SytemVector     (vector or generators) 
  * - EventSetVector  (vector of event sets) 
@@ -551,11 +625,17 @@ private:
  */
 
 template<class T>
-class TBaseVector : public vBaseVector {
+class FAUDES_TAPI TBaseVector : public vBaseVector {
 
 FAUDES_TYPE_TDECLARATION(Void,TBaseVector,vBaseVector)
 
 public:
+
+  using vBaseVector::operator=;
+  using vBaseVector::operator==;
+  using vBaseVector::operator!=;
+  using vBaseVector::Insert;
+  using vBaseVector::Erase;
 
   /**
    * Constructor. 
@@ -642,7 +722,115 @@ public:
    */
   virtual T& At(const Position& pos); 
 
-protected:
+  /** 
+   * Iterator class for high-level API similar to TBaseSet.
+   *
+   */
+  class Iterator;
+  class CIterator;
+
+  /** 
+   * Iterator to the begin of set
+   *
+   * @return 
+   *   Iterator
+   */
+  Iterator Begin(void);
+        
+  /** 
+   * Iterator to the begin of set, const variant
+   *
+   * @return 
+   *   Iterator
+   */
+  CIterator Begin(void) const;
+        
+  /** 
+   * Iterator to the end of set
+   *
+   * @return 
+   *   Iterator
+   */
+  Iterator End(void);
+
+  /** 
+   * Iterator to the end of set, const variant
+   *
+   * @return 
+   *   Iterator
+   */
+  CIterator End(void) const;
+
+  /** 
+   * Insert specified entry.
+   *
+   * Insert with no position defaults to Append/PushBack
+   *
+   *
+   * @param pos
+   *    Position at which to insert
+   * @param rElem
+   *    Element to insert
+   * @exception Exception
+   *   - Position out of range (id 69)
+   *   - Cannot cast element type (63)
+   */
+  virtual void Insert(const T& rElem);
+
+  /** 
+   * Erase specified entry.
+   *
+   * @param vit
+   *    Iterator to element to erase
+   */
+  virtual Iterator Erase(const Iterator& vit);
+ 
+   /** 
+   * Iterator class, ie add one layer of dereferencing.
+   */
+   class Iterator : public std::vector<ElementRecord>::iterator {
+     public:
+     /** Default contructor */
+     Iterator(void) : std::vector<ElementRecord>::iterator() {}; 
+     /** Copy constructor  */
+     Iterator(const Iterator& fit) : std::vector<ElementRecord>::iterator(fit) {};
+     /** Copy constructor from STL itertor */
+     Iterator(const typename std::vector<ElementRecord>::iterator& sit) : std::vector<ElementRecord>::iterator(sit) {};
+     /** Get as STL iterator */
+     const typename std::vector<ElementRecord>::iterator& StlIterator(void) const {return *this;};
+     /** Reimplement dereference */ 
+     T* operator-> (void) const {
+       return dynamic_cast<T*>(std::vector<ElementRecord>::iterator::operator*().pElement);
+     };
+     /** Reimplement derefernce */
+     T& operator* (void) const {
+       return *( dynamic_cast<T*>(std::vector<ElementRecord>::iterator::operator*().pElement) );
+     };
+   };
+
+  /** 
+   * Iterator class, const variant
+   */
+   class CIterator : public std::vector<ElementRecord>::const_iterator {
+     public:
+     /** Default contructor */
+     CIterator(void) : std::vector<ElementRecord>::const_iterator() {}; 
+     /** Copy constructor  */
+     CIterator(const Iterator& fit) : std::vector<ElementRecord>::const_iterator(fit) {};
+     /** Copy constructor from STL itertor */
+     CIterator(const typename std::vector<ElementRecord>::const_iterator& sit) : std::vector<ElementRecord>::const_iterator(sit) {};
+     /** Reimplement dereference */ 
+     const T* operator-> (void) const {
+       return dynamic_cast<const T*>(std::vector<ElementRecord>::const_iterator::operator*().pElement);
+     };
+     /** Reimplement derefernce */
+     const T& operator* (void) const {
+       return *( dynamic_cast<const T*>(std::vector<ElementRecord>::const_iterator::operator*().pElement) );
+     };
+   };
+
+
+ protected:
 
   /** Assignment method  */
   void DoAssign(const TBaseVector<T>& rSourceVector);
@@ -777,7 +965,21 @@ TEMP T& THIS::At(const Position& pos) {
 }
 
 
+// iterators
+TEMP typename THIS::Iterator THIS::Begin(void) { return Iterator(mVector.begin());}
+TEMP typename THIS::CIterator THIS::Begin(void) const { return CIterator(mVector.begin());}
+TEMP typename THIS::Iterator THIS::End(void) { return Iterator(mVector.end());}
+TEMP typename THIS::CIterator THIS::End(void) const { return CIterator(mVector.end());}
 
+// set style element access
+TEMP void THIS::Insert(const T& rElem) { Append(rElem); };
+TEMP typename THIS::Iterator THIS::Erase(const Iterator& pit) {
+  std::vector<ElementRecord>::iterator sit=pit.StlIterator();
+  if(sit->mMine) delete sit->pElement;
+  mVector.erase(sit++);
+  Iterator rit(sit);
+  return rit; 
+};
 
 
 /* undefine local shortcuts */
@@ -785,7 +987,6 @@ TEMP T& THIS::At(const Position& pos) {
 #undef TEMP
 #undef BASE
 
-/** @} doxygen group */
 
 } // namespace faudes
 

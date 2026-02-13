@@ -43,6 +43,11 @@ namespace faudes {
 class FAUDES_API ProductCompositionMap : public Type {
   FAUDES_TYPE_DECLARATION(ProductCompositionMap,ProductCompositionMap,Type)
 public:
+
+  using Type::operator=;
+  using Type::operator==;
+  using Type::operator!=;
+
   // std faudes type
   ProductCompositionMap(void);
   ProductCompositionMap(const ProductCompositionMap& rOther);
@@ -103,6 +108,77 @@ protected:
  *
  */
 extern FAUDES_API void Parallel(const Generator& rGen1, const Generator& rGen2, Generator& rResGen);
+
+
+/**
+ * Parallel composition.
+ *
+ * Constructs the parallel composition of two generators, where shared events
+ * are synchronised while non-shared events are executed independantly. 
+ * The resulting generators alphabet is the union of the argument alphabets.
+ *
+ * This variant stops to explore the accessible region when attained a non-conaccessible
+ * state. Thus, the result is accurate for the marked languages only.
+ * See also Parallel(const Generator&,std::map< std::pair<Idx,Idx>, Idx>&,const Generator&, Generator&).
+ *
+ * @param rGen1
+ *   First generator
+ * @param rGen2
+ *   Second generator
+ * @param rResGen
+ *   Reference to resulting parallel composition generator
+ *
+ * <h4>Example:</h4>
+ * <table border=0> <tr> <td> <table>
+ * <tr> <td> Generator G1 </td> <td> Generator G2 </td> </tr>
+ * <tr>
+ * <td> @image html tmp_parallel_g1.png </td>
+ * <td> @image html tmp_parallel_g2.png </td>
+ * </tr>
+ * </table> </td> </tr> <tr> <td> <table width=100%>
+ * <tr> <td> G1 || G2 </td> </tr>
+ * <tr> <td> @image html tmp_parallel_g1g2.png </td> </tr>
+ * </table> </td> </tr> </table>
+ *
+ * @ingroup GeneratorFunctions
+ *
+ */
+extern FAUDES_API void ParallelLive(const Generator& rGen1, const Generator& rGen2, Generator& rResGen);
+
+/**
+ * Parallel composition.
+ *
+ * See also Parallel(const Generator&, const Generator&, Generator&).
+ * This version takes a vector of generators as argument to perform
+ * a synchronous composition of multiple generators. The implementation
+ * calls the std Parallel multiple times, future implementations may
+ * explore the overall reachable state set.
+ *
+ * @param rGenVec
+ *   Vector of input generators
+ * @param rResGen
+ *   Reference to resulting composition generator
+ *
+ */
+extern FAUDES_API void Parallel(const GeneratorVector& rGenVec, Generator& rResGen);
+
+
+/**
+ * Parallel composition, non-blocking part.
+ *
+ * See also Parallel(const Generator&, const Generator&, Generator&).
+ * This version takes a vector of generators as argument to perform
+ * a synchronous composition of multiple generators. The implementation
+ * calls the std Parallel multiple times, and, at each stage, removes outgoing transitions
+ * from blocking states. Thus, the result will be accurate for non-blocking part only.
+ *
+ * @param rGenVec
+ *   Vector of input generators
+ * @param rResGen
+ *   Reference to resulting composition generator
+ *
+ */
+extern FAUDES_API void ParallelLive(const GeneratorVector& rGenVec, Generator& rResGen);
 
 
 /**
@@ -186,7 +262,7 @@ extern FAUDES_API void aParallel(const Generator& rGen1, const Generator& rGen2,
 extern FAUDES_API void Parallel(
     const Generator& rGen1, const Generator& rGen2,
     std::map< std::pair<Idx,Idx>, Idx>& rCompositionMap, 
-    Generator& rResGen);
+    Generator& rResGen, bool live_only=false);
 
 
 /**

@@ -4,6 +4,7 @@
    FAU Discrete Event System Simulator 
 
    Copyright (C) 2007  Christoph Doerr
+   Copyright (C) 2008, 2024  Thomas Moor
    Exclusive copyright is granted to Thomas Moor
 
 */
@@ -106,10 +107,11 @@ C implementation adapted from Peter's Perl version             \n
 
 ---------------------------------------------------------------------
 
-Regarding 3), found as code example in Wikipedia
+Regarding 3) found as code example in Wikipedia
 
 ---------------------------------------------------------------------
 
+@{
 
 */
 

@@ -62,7 +62,7 @@ namespace faudes {
  * Naturally, the DeviceExecutor requires the IO Device plugin in order to be functional.
  * In the absence of the plugin, the DeviceExecutor will behave like a ProposingExecutor.
  *
- * \section SecSimulatorLPEX3 File IO
+ * \section SecSimulatorDPLPEX2 File IO
  *
  * The DeviceExecutor inherits file IO from the ProposingExecutor. The device itself 
  * is initialized by vDevice methods (eg configured from File) and then passed to the 

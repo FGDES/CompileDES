@@ -73,6 +73,10 @@ FAUDES_TYPE_DECLARATION(SymbolSet,SymbolSet,TBaseSet<std::string>)
 
 public:
 
+  using TBaseSet<std::string>::operator=;
+  using TBaseSet<std::string>::operator==;
+  using TBaseSet<std::string>::operator!=;
+
   /**
    * Constructor. 
    */
@@ -156,8 +160,6 @@ public:
    *
    * @param rSource 
    *    Source to copy from
-   * @return
-   *    Ref to this set
    */
   void DoAssign(const SymbolSet& rSource);
 

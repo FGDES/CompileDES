@@ -462,12 +462,12 @@ void EmbeddedcCodeGenerator::CintarrayDeclare(const AA& address, int offset, con
     FCG_ERR("EmbeddedcCodeGenerator::Cintarray(): const vector exceeds addres range");
     return;
   }
-  const std::vector<int> *pval=&val;
+  //const std::vector<int> *pval=&val;
   if(offset>0) {
     std::vector<int> oval(val.size()+offset,0);
     for(size_t i=0; i<val.size(); ++i)
       oval[offset+i]=val[i];
-    pval=&oval;
+    //pval=&oval;
   }
   Output() << "const " << mIntegerType << " " << TargetAddress(address) << "[] = ";
   LineFeed();

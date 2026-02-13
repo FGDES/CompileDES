@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
 Copyright (C) 2006  Bernd Opitz
-Copyright (C) 2007  Thomas Moor
+Copyright (C) 2007-2024  Thomas Moor
 Exclusive copyright is granted to Klaus Schmidt
 
 This library is free software; you can redistribute it and/or
@@ -46,7 +46,7 @@ namespace faudes {
 /**
  * Base class of all FAUDES generators.
  * 
- * \section GeneratorMembers Overview
+ * @subsection GeneratorMembers Overview
  *
  * The faudes::vGenerator models the plain five-tupel G = (X, Sigma, Delta, X_0, X_m) to represent
  * the marked language L(G) and closed language L_m(G), respectively. It provides read and write
@@ -67,7 +67,7 @@ namespace faudes {
  * is not in the alphabet. 
  *
  *
- * \section SecEventsVersusStates Events Versus States
+ * @subsection SecEventsVersusStates Events Versus States
  *
  * While both, events and states, are represented by the integer type faudes::Idx, there
  * is a fundamental distinction between both, which stems from the design choice to use generators
@@ -91,7 +91,7 @@ namespace faudes {
  * of the respective arguments. Turning of this feature and avoiding state names alltogether
  * considerably increases libFAUDES performance.
  *
- * \section GeneratorFileFormat File I/O (default format)
+ * @subsection GeneratorFileFormat File I/O (default format)
  *
  * Generators inherit the standard token IO interface from the libFAUDES general purpose base Type, 
  * so you may use Read and Write functions for generators. The file-format consists of a generator 
@@ -154,7 +154,7 @@ namespace faudes {
  * </Generator>
  * @endcode
  * 
- * \section GeneratorFileFormat File I/O (XML file-format)
+ * @subsection GeneratorFileFormatXML File I/O (XML file-format)
  *
  * The alternative file file format prodiced by XWrite() is meant to accomodate
  * for additional attributes attached to states, events and transitions, including e.g.
@@ -190,7 +190,7 @@ namespace faudes {
  * @endcode
  *
  *
- * \section GeneratorAttributes Attributes
+ * @subsection GeneratorAttributes Attributes
  *
  * libFAUDES generators provide an interface to access so called attributes, ie data that 
  * is optionally attached to individual states, events, transitions, or globally to the generator.
@@ -210,10 +210,10 @@ namespace faudes {
  */
 
 
-class FAUDES_API vGenerator : public Type  {
+class FAUDES_API vGenerator : public ExtType  {
 
  public:
-    
+
   /** @name Constructors & Destructor */
   /** @{ doxygen group */
 
@@ -332,7 +332,9 @@ class FAUDES_API vGenerator : public Type  {
    * @param rOtherGen
    *   Other generator
    */
-  virtual vGenerator& operator= (const vGenerator& rOtherGen);
+  /*virtual*/ vGenerator& operator= (const vGenerator& rOtherGen);
+  //using Type::operator=;
+    
 
   /**
    * Create another version of this generator.
@@ -396,22 +398,6 @@ class FAUDES_API vGenerator : public Type  {
   /** @name Basic Maintenance */
   /** @{ doxygen group */
 
-
-  /** 
-   * Set the generator's name 
-   *
-   * @param rName
-   *   Generator name
-   */
-  void Name(const std::string& rName);
-
-  /** 
-   * Get generator's name 
-   *
-   * @return 
-   *   Name of generator
-   */
-  const std::string& Name(void) const;
 
  /** 
    * Check if generator is valid. 
@@ -647,7 +633,7 @@ class FAUDES_API vGenerator : public Type  {
    * Rename event in this generator.
    * Convenience wrapper for EventRename(Idx, const std::string&).
    *
-   * @param event
+   * @param rOldName
    *   Event to rename
    * @param rNewName
    *   New name
@@ -699,8 +685,6 @@ class FAUDES_API vGenerator : public Type  {
    * respective generator. It is most unlikely that you want to use
    * this function.
    *
-   * @return
-   *   Pointer to mpStateSymbolTable
    */
   void StateSymbolTable(const SymbolTable& rSymTab);
 
@@ -1403,7 +1387,7 @@ class FAUDES_API vGenerator : public Type  {
    * @param rNewalphabet
    *   EventSet with alphabet
    */
-  void RestrictAlphabet(const EventSet& rNewalphabet);
+  virtual void RestrictAlphabet(const EventSet& rNewalphabet);
 
   /** 
    * Add new anonymous state to generator 
@@ -1511,7 +1495,7 @@ class FAUDES_API vGenerator : public Type  {
    * @param rStates
    *   StateSet containing valid states
    */
-  void RestrictStates(const StateSet& rStates);
+  virtual void RestrictStates(const StateSet& rStates);
 
 
   /** 
@@ -1601,7 +1585,7 @@ class FAUDES_API vGenerator : public Type  {
   Idx InsMarkedState(const std::string& rName);
 
   /** 
-   * Add (perhaps new) anonymous initial states to generator  
+   * Add (perhaps new/anonymous) marked states to generator  
    * 
    * @param rStates
    *   Set of states to add
@@ -2329,7 +2313,7 @@ class FAUDES_API vGenerator : public Type  {
    *
    * THIS IS EXPERIMENTAL / NEEDS TESTING
    *
-   * @param rSigmaHi
+   * @param rSigmaO
    *   Specified alphabet Sigma_o
    *
    * @return
@@ -2367,35 +2351,6 @@ class FAUDES_API vGenerator : public Type  {
    */
   bool IsTrim(void) const;
 
-
-  /**
-   * Make generator omega-trim
-   *
-   * This function removes states such that the generator becomes
-   * omega trim while not affecting the induced omega language. 
-   *
-   * The implementation first makes the generator accessible
-   * and then iteratively removes state that either 
-   * never reach a marked state or that are guaranteed to eventually
-   * reach a terminal state. There might be a more efficient 
-   * approach.
-   *
-   * @return 
-   *   True if resulting generator contains at least one initial state and at least one marked state.
-   */
-  bool OmegaTrim(void);
-
-
-  /**
-   * Check if generator is omega-trim.
-   *
-   * Returns true if all states are accessible, coacessible, and
-   * have a successor state.
-   *
-   * @return
-   *   True if generator is omega-trim
-   */
-  bool IsOmegaTrim(void) const;
 
 
 
@@ -2489,11 +2444,33 @@ class FAUDES_API vGenerator : public Type  {
    *   Reference to TokenWriter
    * @param rStateSet
    *   Reference to stateset
+   * @param rLabel
+   *   Optional outer tag, defaults to name of the set
    *
    * @exception Exception
    *   - IO errors (id 2)
    */
-  void WriteStateSet(TokenWriter& rTw, const StateSet& rStateSet) const;
+  void WriteStateSet(TokenWriter& rTw, const StateSet& rStateSet, const std::string& rLabel="") const;
+
+  /**
+   * Write a stateset to TokenWriter in XML format.
+   *
+   * This version for file IO supports the XML format introduced with libFAUDES 2.20.
+   * Note that for Generators and derived classes, the native libFAUDES token
+   * format is considered the default. To obtain XML fromated output of a Generator,
+   * use the XWrite() interface.
+   *
+   * @param rTw
+   *   Reference to TokenWriter
+   * @param rStateSet
+   *   Reference to stateset
+   * @param rLabel
+   *   Section name, defaults to name of set
+   *
+   * @exception Exception
+   *   - IO errors (id 2)
+   */
+  void XWriteStateSet(TokenWriter& rTw, const StateSet& rStateSet, const std::string& rLabel="") const;
 
   /**
    * Write a stateset to TokenWriter (debug version, no re-indexing)
@@ -2645,7 +2622,6 @@ class FAUDES_API vGenerator : public Type  {
    *   - token mismatch (id 50, 51, 52, 80, 85)
    */
   void ReadStateSet(TokenReader& rTr, const std::string& rLabel, StateSet& rStateSet) const;
-
 
   /**
    * Test whether file-i/o uses minimal state indicees.
@@ -2913,9 +2889,6 @@ class FAUDES_API vGenerator : public Type  {
 
  protected:
 
-  /** Name of generator */
-  std::string mMyName;
-
   /** Number of generator */
   Idx mId;
 
@@ -3117,8 +3090,6 @@ class FAUDES_API vGenerator : public Type  {
    *
    * @param rTw
    *   Reference to TokenWriter
-   * @param rStateSet
-   *   Reference to stateset
    *
    * @exception Exception
    *   - IO errors (id 2)
@@ -3195,25 +3166,6 @@ class FAUDES_API vGenerator : public Type  {
    */
   void XReadTransRel(TokenReader& rTr);
 
-  /**
-   * Write a stateset to TokenWriter in XML format.
-   *
-   * This version for file IO supports the XML format introduced with libFAUDES 2.20.
-   * Note that for Generators and derived classes, the native libFAUDES token
-   * format is considered the default. To obtain XML fromated output of a Generator,
-   * use the XWrite() interface.
-   *
-   * @param rTw
-   *   Reference to TokenWriter
-   * @param rStateSet
-   *   Reference to stateset
-   * @param rLabel
-   *   Section name, defaults to name of set
-   *
-   * @exception Exception
-   *   - IO errors (id 2)
-   */
-  void XWriteStateSet(TokenWriter& rTw, const StateSet& rStateSet, const std::string& rLabel="") const;
 
   /**
    * Write transition relation to tokenwriter in XML format.
@@ -3265,12 +3217,6 @@ extern FAUDES_API bool IsCoaccessible(const vGenerator& rGen);
  * \ingroup GeneratorFunctions
  */
 extern FAUDES_API bool IsTrim(const vGenerator& rGen);
-
-/** 
- * RTI wrapper function. See also vGenerator::IsOmegaTrim().
- * \ingroup GeneratorFunctions
- */
-extern FAUDES_API bool IsOmegaTrim(const vGenerator& rGen);
 
 /** 
  * RTI wrapper function. See also vGenerator::IsComplete().
@@ -3351,17 +3297,6 @@ extern FAUDES_API void Trim(vGenerator& rGen);
  */
 extern FAUDES_API void Trim(const vGenerator& rGen, vGenerator& rRes);
 
-/** 
- * RTI wrapper function. See also vGenerator::OmegaTrim().
- * \ingroup GeneratorFunctions
- */
-extern FAUDES_API void OmegaTrim(vGenerator& rGen);
-
-/** 
- * RTI wrapper function. See also vGenerator::OmegaTrim().
- * \ingroup GeneratorFunctions
- */
-extern FAUDES_API void OmegaTrim(const vGenerator& rGen, vGenerator& rRes);
 
 /** 
  * RTI wrapper function. 
@@ -3402,6 +3337,23 @@ extern FAUDES_API void SetUnion(const GeneratorVector& rGenVec, EventSet& rRes);
 extern FAUDES_API void SetDifference(const vGenerator& rGenA, const vGenerator& rGenB, EventSet& rRes);
 
 
+/**
+ * Apply relable map to generator
+ *
+ * This implementation tries to keep the atributtes from the
+ * domain elements.
+ *
+ * @param rMap
+ *  map to apply
+ * @param rGen
+ *  generator to apply the map to
+ * @param rRes
+ *  relabled generator
+ * @exceptions
+ *  - symboltable must match
+ */
+extern FAUDES_API void ApplyRelabelMap(const RelabelMap& rMap, const vGenerator& rGen, vGenerator& rRes);
+  
 
 
 } // namespace faudes

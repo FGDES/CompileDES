@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
 Copyright (C) 2009 Ruediger Berndt
-Copyright (C) 2010 Thomas Moor
+Copyright (C) 2010-2025 Thomas Moor
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -73,6 +73,11 @@ void Type::Clear(void) {
   FD_DC("Type::Clear(): not re-implemented in " << typeid(*this).name());
 }
 
+// Clear()
+bool Type::IsDefault(void) const {
+  return false;
+}
+
 // assign
 Type& Type::Assign(const Type& rSource) {
   FD_DC("Type(" << this << ")::Assign(" << &rSource << ")");
@@ -87,18 +92,19 @@ bool Type::Equal(const Type& rOther) const {
 
 // equality (strict)
 bool Type::operator==(const Type& rOther) const { 
-  return typeid(*this)==typeid(rOther);
+  return DoEqual(rOther);
 }
 
 // equality
 bool Type::operator!=(const Type& rOther) const { 
-  return ! operator==(rOther);
+  return !DoEqual(rOther);
 }
 
 // assign
 Type& Type::operator=(const Type& rSource) {
   FD_DC("Type(" << this << ")::AssignementOperator(" << &rSource << ")");
   Clear();
+  DoAssign(rSource);
   return *this;
 }
 
@@ -109,7 +115,7 @@ void Type::DoAssign(const Type& rSource) {
 
 // equality
 bool Type::DoEqual(const Type& rOther) const {
-  FD_WARN("Type(" << this << ")::DoEqual(" << &rOther << ")");
+  //typeid(*this)==typeid(rOther); TM 2025
   return true;
 }
 
@@ -326,6 +332,169 @@ Token Type::XBeginTag(const std::string& rLabel,const std::string& rFallbackLabe
   // done
   return btag;
 }
+
+
+
+/*
+********************************************************************
+********************************************************************
+********************************************************************
+
+Implementation of class ExtType
+
+********************************************************************
+********************************************************************
+********************************************************************
+*/
+
+// faudes type
+FAUDES_TYPE_IMPLEMENTATION(Void,AttrType,Type)
+
+// constructor
+AttrType::AttrType(void) : Type() {
+  FAUDES_OBJCOUNT_INC("AttrType");
+}
+
+// constructor
+AttrType::AttrType(const AttrType& rOther) : Type(rOther) {
+  FAUDES_OBJCOUNT_INC("AttrType");
+}
+
+// destructor
+AttrType::~AttrType(void) {
+  FAUDES_OBJCOUNT_DEC("AttrType");
+}
+
+//Skip(rTr)
+void AttrType::Skip(TokenReader& rTr) {
+  FD_DC("AttrType::Skip()");
+  Token token;
+  while(rTr.Peek(token)) {
+    // break on index or name, since this is the next element
+    if((token.Type()==Token::String) || (token.Type()==Token::Integer)) {
+      break;
+    }
+    // break on end, since this is the end of the container
+    if(token.Type()==Token::End) {
+      break;
+    }
+    // break on Consecutive section, since this belongs to the container
+    if((token.Type()==Token::Begin) && (token.StringValue() == "Consecutive")) {
+      break;
+    }
+    // skip any attribute section from other file format
+    if(token.Type()==Token::Begin){
+      rTr.ReadBegin(token.StringValue());
+      rTr.ReadEnd(token.StringValue());
+      continue;
+    }  
+    // skip any other token from other file format
+    rTr.Get(token);
+  }
+}
+
+
+/*
+********************************************************************
+********************************************************************
+********************************************************************
+
+Implementation of class ExtType
+
+********************************************************************
+********************************************************************
+********************************************************************
+*/
+
+// std faudes type methods
+FAUDES_TYPE_IMPLEMENTATION(Void,ExtType,AttrType)
+
+// constructor
+ExtType::ExtType(void) : AttrType(), pTypeDefinition(nullptr) {}
+
+// copy constructor
+ExtType::ExtType(const ExtType& rType) : AttrType(), pTypeDefinition(nullptr)  {(void) rType;}
+
+// destructor
+ExtType::~ExtType(void) {}
+
+// Name
+const std::string& ExtType::Name(void) const {
+  return mObjectName;
+}
+		
+// Name
+void ExtType::Name(const std::string& rName) {
+  mObjectName = rName;
+}
+  
+// TypeDefinitionp()
+// Note: fake const construct
+const TypeDefinition* ExtType::TypeDefinitionp(void) const {
+  if(!pTypeDefinition) {
+    // provide fake const
+    ExtType* fake_const = const_cast< ExtType* >(this);
+    fake_const->pTypeDefinition=TypeRegistry::G()->Definitionp(*this);
+  }
+  return pTypeDefinition;
+}
+  
+// Faudes Type
+const std::string& ExtType::TypeName(void) const {
+  if(mFaudesTypeName.empty()) {
+    // provide fake const
+    ExtType* fake_const = const_cast< ExtType* >(this);
+    const TypeDefinition* fdp=TypeDefinitionp();
+    if(fdp) fake_const->mFaudesTypeName=fdp->Name();
+  }
+  return mFaudesTypeName;
+}
+
+// Faudes Type
+void ExtType::TypeName(const std::string& rType) {
+  mFaudesTypeName=rType;
+}
+
+// ElementTag
+const std::string& ExtType::ElementTag(void) const {
+  FD_DRTI("ExtType::ElementTag(" << typeid(*this).name() <<")");  
+  if(mElementTag.empty()) {
+    // provide fake const
+    ExtType* fake_const = const_cast< ExtType* >(this);
+    fake_const->mElementTag=mElementTagDef;
+    const TypeDefinition* fdp=TypeDefinitionp();
+    if(fdp) {
+      FD_DRTI("Type::ElementTag: type " << fdp->TypeName() << "etag " << fdp->ElementTag());
+      if(!fdp->ElementTag().empty()) fake_const->mElementTag=fdp->ElementTag();
+    }
+  }
+  FD_DRTI("Type::ElementTag(" << typeid(*this).name() <<"): using tag: " << mElementTag);  
+  return mElementTag;
+}
+
+// ElementTag
+void ExtType::ElementTag(const std::string& rTag) {
+  mElementTag=rTag;
+}
+
+
+// figure element type
+const std::string& ExtType::ElementType(void) const {
+  FD_DRTI("ExtType::ElementType(" << typeid(*this).name() <<")");  
+  if(mElementType.empty()) {
+    // provide fake const
+    ExtType* fake_const = const_cast< ExtType* >(this);
+    const TypeDefinition* fdp=TypeDefinitionp();
+    if(fdp) {
+      FD_DRTI("Type::ElementType: type " << fdp->TypeName() << "etype " << fdp->ElementType());
+      if(!fdp->ElementType().empty()) fake_const->mElementType=fdp->ElementType();
+    }
+  }
+  FD_DRTI("Type::ElementType(" << typeid(*this).name() <<"): using tag: " << mElementType);  
+  return mElementType;
+}
+
+  
 
 
 
@@ -724,7 +893,8 @@ void TypeDefinition::Clear(){
   // call base
   Documentation::Clear();
   // my members
-  mXElementTag="";
+  mElementTag="";
+  mElementType="";
 }
 
 
@@ -733,7 +903,8 @@ void TypeDefinition::DoAssign(const TypeDefinition& rSrc) {
   // assign base members
   Documentation::DoAssign(rSrc);
   // assign my members
-  mXElementTag=rSrc.mXElementTag;
+  mElementTag=rSrc.mElementTag;
+  mElementType=rSrc.mElementType;
   // special member
   if(mpType) delete mpType;
   mpType=0;
@@ -746,7 +917,8 @@ bool TypeDefinition::DoEqual(const TypeDefinition& rOther) const {
   // test base members
   if(!Documentation::DoEqual(rOther)) return false;
   // test my members
-  if(mXElementTag!=rOther.mXElementTag) return false;
+  if(mElementTag!=rOther.mElementTag) return false;
+  if(mElementType!=rOther.mElementType) return false;
   return true;
 }
 
@@ -775,11 +947,20 @@ void TypeDefinition::DoReadCore(TokenReader& rTr) {
     rTr.Peek(token);
     // element tag
     if(token.IsBegin())
-    if(token.StringValue()=="XElementTag") {
-      rTr.ReadBegin("XElementTag",token);
+    if(token.StringValue()=="ElementTag") {
+      rTr.ReadBegin("ElementTag",token);
       if(token.ExistsAttributeString("value"))
-        mXElementTag=token.AttributeStringValue("value");
-      rTr.ReadEnd("XElementTag");
+        mElementTag=token.AttributeStringValue("value");
+      rTr.ReadEnd("ElementTag");
+      continue;
+    }
+    // element type
+    if(token.IsBegin())
+    if(token.StringValue()=="ElementType") {
+      rTr.ReadBegin("ElementType",token);
+      if(token.ExistsAttributeString("value"))
+        mElementType=token.AttributeStringValue("value");
+      rTr.ReadEnd("ElementType");
       continue;
     }
     // break un unknown
@@ -802,11 +983,18 @@ void TypeDefinition::DoWriteCore(TokenWriter& rTw) const {
   // call base core
   Documentation::DoWriteCore(rTw);  
   // my data
-  if(mXElementTag!="") {
+  if(mElementTag!="") {
     Token etag;
-    etag.SetEmpty("XElementTag");
-    etag.InsAttributeString("value", mXElementTag);
+    etag.SetEmpty("ElementTag");
+    etag.InsAttributeString("value", mElementTag);
     rTw << etag;
+  }
+  // my data
+  if(mElementType!="") {
+    Token etype;
+    etype.SetEmpty("ElementType");
+    etype.InsAttributeString("value", mElementType);
+    rTw << etype;
   }
 }
 
@@ -842,15 +1030,24 @@ Type* TypeDefinition::NewObject() const{
 }
 
 
-
 // parameter access
-const std::string& TypeDefinition::XElementTag(void) const {
-  return mXElementTag;
+const std::string& TypeDefinition::ElementTag(void) const {
+  return mElementTag;
 }
 
 // parameter access
-void TypeDefinition::XElementTag(const std::string& rTag)  {
-  mXElementTag=rTag;
+void TypeDefinition::ElementTag(const std::string& rTag)  {
+  mElementTag=rTag;
+}
+
+// parameter access
+const std::string& TypeDefinition::ElementType(void) const {
+  return mElementType;
+}
+
+// parameter access
+void TypeDefinition::ElementType(const std::string& rType)  {
+  mElementType=rType;
 }
 
 

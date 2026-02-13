@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
    Copyright (C) 2006  Bernd Opitz
-   Copyright (C) 2007  Thomas Moor
+   Copyright (C) 2007, 2010, 2025  Thomas Moor
    Exclusive copyright is granted to Klaus Schmidt
 
    This library is free software; you can redistribute it and/or
@@ -24,8 +24,12 @@
 #include "cfl_generator.h"
 #include <stack>
 
+//local debug
+//#undef FD_DG
+//#define FD_DG(m) FD_WARN(m)
 
 namespace faudes {
+
 
 // msObjectCount (static) 
 Idx vGenerator::msObjectCount = 0;
@@ -61,9 +65,7 @@ const AttributeVoid& vGenerator::GlobalVoid(void) {
 // constructor
 vGenerator::vGenerator(void) : 
   // base
-  Type(),
-  // my name
-  mMyName("Generator"),
+  ExtType(),
   // have std symboltables
   mpStateSymbolTable(&mStateSymbolTable),
   mpEventSymbolTable(GlobalEventSymbolTablep()),
@@ -86,6 +88,8 @@ vGenerator::vGenerator(void) :
   // track generator objects
   msObjectCount++; 
   mId = msObjectCount;
+  // overwrite base defaults
+  mObjectName="Generator",
   // allocate core members
   NewCore();
   // fix std names
@@ -95,8 +99,8 @@ vGenerator::vGenerator(void) :
 
 // copy constructor
 vGenerator::vGenerator(const vGenerator& rOtherGen) :
-  // my name
-  mMyName("Generator"),
+  // base
+  ExtType(),
   // have std symboltables
   mpStateSymbolTable(&mStateSymbolTable),
   mpEventSymbolTable(GlobalEventSymbolTablep()),
@@ -119,6 +123,8 @@ vGenerator::vGenerator(const vGenerator& rOtherGen) :
   // track generator objects
   msObjectCount++; 
   mId = msObjectCount;
+  // overwrite base defaults
+  mObjectName="Generator",
   // allocate core members
   NewCore();
   // perform copy
@@ -127,8 +133,8 @@ vGenerator::vGenerator(const vGenerator& rOtherGen) :
 
 // construct from file
 vGenerator::vGenerator(const std::string& rFileName) : 
-  // my name
-  mMyName("Generator"),
+  // base
+  ExtType(),
   // have std symboltables
   mpStateSymbolTable(&mStateSymbolTable),
   mpEventSymbolTable(GlobalEventSymbolTablep()),
@@ -151,6 +157,8 @@ vGenerator::vGenerator(const std::string& rFileName) :
   // track generator objects
   msObjectCount++; 
   mId = msObjectCount;
+  // overwrite base defaults
+  mObjectName="Generator",
   // allocate core members
   NewCore();
   // fix std names
@@ -521,17 +529,6 @@ void vGenerator::Version(const std::string& rPattern, const std::string& rReplac
   rResGen.mReindexOnWrite = mReindexOnWrite;
 }
 
-
-// Name(rName)
-void vGenerator::Name(const std::string& rName) {
-  FD_DV("vGenerator(" << this << ")::Name(\"" << rName << "\")");
-  mMyName = rName;
-}
-
-// Name()
-const std::string& vGenerator::Name(void) const {
-  return mMyName;
-}
 
 // Valid()
 bool vGenerator::Valid(void) const {
@@ -2330,37 +2327,6 @@ StateSet vGenerator::TerminalStates(void) const {
 }
 
 
-// OmegaTrim
-bool vGenerator::OmegaTrim(void) {
-
-  // note: this really is inefficient; at least we should
-  // record the inverse transition relation for the coaccessile
-  // iteration
-
-  // first we make the generator accessible
-  Accessible();
-  // iterate coaccessible and complete until convergence in oserved
-  while(1) {
-    Idx osize=States().Size();
-    Coaccessible();
-    Complete();
-    if(States().Size()==osize) break;
-  }    
-  // done
-  return !InitStates().Empty() && !MarkedStates().Empty();
-}
-
-
-// IsOmegaTrim()
-bool vGenerator::IsOmegaTrim(void) const {
-  bool res=true;
-  if(!IsAccessible()) res=false;
-  else if(!IsCoaccessible()) res=false;
-  else if(!IsComplete()) res=false;
-  FD_DF("vGenerator::IsOmegaTrim(): result " << res);
-  return res;
-}
-
 
 
 // IsDeterministic()
@@ -2422,14 +2388,17 @@ void vGenerator::DoWrite(TokenWriter& rTw, const std::string& rLabel, const Type
     SetMinStateIndexMap();
   // figure section
   std::string label=rLabel;
+  std::string ftype=TypeName();
   if(label=="") label="Generator"; 
   FD_DG("vGenerator(" << this << ")::DoWrite(): section " << label);
-  // write generator
+  // figure begin tag
   Token btag;
   btag.SetBegin(label);
-  if(mMyName!=label) btag.InsAttributeString("name",mMyName);
+  if(mObjectName!=label) btag.InsAttributeString("name",mObjectName);
+  if(ftype!=label && ftype!="") btag.InsAttributeString("ftype",ftype); // semi mandatory type v2.33j   
   rTw.Write(btag);
   rTw << "\n";
+  // write body
   SWrite(rTw);
   rTw << "\n";
   mpAlphabet->Write(rTw);
@@ -2442,7 +2411,7 @@ void vGenerator::DoWrite(TokenWriter& rTw, const std::string& rLabel, const Type
   rTw << "\n";
   WriteStateSet(rTw, mMarkedStates);
   rTw << "\n";
-  mpGlobalAttribute->Write(rTw);
+  mpGlobalAttribute->Write(rTw,"",this);
   rTw << "\n";
   rTw.WriteEnd(label);
   // end of reindex
@@ -2458,7 +2427,7 @@ void vGenerator::DoDWrite(TokenWriter& rTw, const std::string& rLabel, const Typ
   FD_DG("vGenerator(" << this << ")::DoDWrite(): section " << label);
   // write generator
   rTw.WriteBegin(label);
-  rTw << mMyName;
+  rTw << mObjectName;
   rTw << "\n";
   rTw << "\n";
   SWrite(rTw);
@@ -2473,7 +2442,7 @@ void vGenerator::DoDWrite(TokenWriter& rTw, const std::string& rLabel, const Typ
   rTw << "\n";
   DWriteStateSet(rTw, mMarkedStates);
   rTw << "\n";
-  mpGlobalAttribute->Write(rTw);
+  mpGlobalAttribute->DWrite(rTw,"",this);
   rTw << "\n";
   rTw.WriteEnd(label);
   rTw << "\n";
@@ -2489,9 +2458,7 @@ void vGenerator::DoXWrite(TokenWriter& rTw, const std::string& rLabel, const Typ
   Token btag;
   btag.SetBegin(label);
   if(Name()!=label && Name()!="") btag.InsAttributeString("name",Name());
-  //2.24e: make ftype mandatory for XML format to allow for more flexible faudes/plain format
-  //if(ftype!=label && ftype!="") btag.InsAttributeString("ftype",ftype); // pre 2.22e  
-  btag.InsAttributeString("ftype",ftype); // 2.24e
+  btag.InsAttributeString("ftype",ftype); // mandatory as of 2.24e
   FD_DG("vGenerator(" << this << ")::DoXWrite(..): section " << btag.StringValue() << " #" << Size());
   rTw.Write(btag);
   // Optional re-indexing
@@ -2504,7 +2471,7 @@ void vGenerator::DoXWrite(TokenWriter& rTw, const std::string& rLabel, const Typ
   rTw << "\n";
   XWriteTransRel(rTw);
   rTw << "\n";
-  mpGlobalAttribute->XWrite(rTw);
+  mpGlobalAttribute->XWrite(rTw,"",this);
   if(!mpGlobalAttribute->IsDefault())
     rTw << "\n";
   // Write end
@@ -2647,8 +2614,11 @@ void vGenerator::WriteStates(TokenWriter& rTw) const {
 
 
 // WriteStateSet(rTw&, rStateSet&) 
-void vGenerator::WriteStateSet(TokenWriter& rTw, const StateSet&  rStateSet) const {
-  rTw.WriteBegin(rStateSet.Name());
+void vGenerator::WriteStateSet(TokenWriter& rTw, const StateSet&  rStateSet, const std::string& rLabel) const {
+  // begin tag
+  std::string label=rLabel;
+  if(label.empty()) label=rStateSet.Name();
+  rTw.WriteBegin(label);
   // test whether we reindex
   bool reindex=mMinStateIndexMap.size()>0;
   // if we reindex, setup reverse map to write in strategic order;
@@ -2728,7 +2698,7 @@ void vGenerator::WriteStateSet(TokenWriter& rTw, const StateSet&  rStateSet) con
     }
   }
   // write end tag
-  rTw.WriteEnd(rStateSet.Name());
+  rTw.WriteEnd(label);
 }
 
 
@@ -2913,7 +2883,7 @@ void vGenerator::DWriteTransRel(TokenWriter& rTw) const {
     Idx x1= tit->X1;
     std::string x1name = StateName(x1);
     if (x1name != "") {
-      ox1 << x1name << "[" << x1 << "]";
+      ox1 << x1name << "#" << x1;
     } else {
       ox1 << x1;
     }
@@ -2922,14 +2892,14 @@ void vGenerator::DWriteTransRel(TokenWriter& rTw) const {
     std::ostringstream oev;
     Idx ev= tit->Ev;
     std::string evname = EventName(ev);
-    oev << evname << "[" << ev << "]";
+    oev << evname << "#" << ev;
     rTw << oev.str();
     // write x2
     std::ostringstream ox2;
     Idx x2= tit->X2;
     std::string x2name = StateName(x2);
     if (x2name != "") {
-      ox2 << x2name << "[" << x2 << "]";
+      ox2 << x2name << "#" << x2;
     } else {
       ox2 << x2;
     }
@@ -2999,19 +2969,35 @@ void vGenerator::DoSWrite(TokenWriter& rTw) const
 // DotWrite(rFileName)
 void vGenerator::DotWrite(const std::string& rFileName) const {
   FD_DG("vGenerator(" << this << ")::DotWrite(" << rFileName << ")");
-  if(ReindexOnWrite())
-    SetMinStateIndexMap();
+  // prepare
+  if(ReindexOnWrite()) SetMinStateIndexMap();
+  TransSetX1X2Ev trx1x2ev(TransRel());
   StateSet::Iterator lit;
-  TransSet::Iterator tit;
+  TransSetX1X2Ev::Iterator tit;
+  // inspect labels to decide on shape
+  bool circles=true;
+  for(lit = StatesBegin(); lit != StatesEnd(); ++lit) {
+    std::string xname= StateName(*lit);
+    if(!xname.empty()) circles=false;
+    xname=ToStringInteger(MinStateIndex(*lit));
+    if(xname.length()>2) circles=false;
+    if(!circles) break;
+  }
+  // iterate items and write to dot file
   try {
+    // header
     std::ofstream stream;
     stream.exceptions(std::ios::badbit|std::ios::failbit);
     stream.open(rFileName.c_str());
     stream << "// dot output generated by libFAUDES vGenerator" << std::endl;
     stream << "digraph \"" << Name() << "\" {" << std::endl;
     stream << "  rankdir=LR" << std::endl;
-    stream << "  node [shape=circle];" << std::endl;
+    if(circles)
+      stream << "  node [shape=circle];" << std::endl;
+    else 
+      stream << "  node [shape=rectangle, style=rounded];" << std::endl;
     stream << std::endl;
+    // fake init states
     stream << "  // initial states" << std::endl;
     int i = 1;
     for (lit = InitStatesBegin(); lit != InitStatesEnd(); ++lit) {
@@ -3022,30 +3008,59 @@ void vGenerator::DotWrite(const std::string& rFileName) const {
       i++;
     }
     stream << std::endl;
+    // marked states
     stream << "  // mstates" << std::endl;
-    for (lit = MarkedStatesBegin(); lit != MarkedStatesEnd(); ++lit) {
+    for(lit = MarkedStatesBegin(); lit != MarkedStatesEnd(); ++lit) {
       std::string xname= StateName(*lit);
       if(xname=="") xname=ToStringInteger(MinStateIndex(*lit));
-      stream << "  \"" << xname << "\" [shape=doublecircle];" << std::endl;
+      if(circles) {
+        stream << "  \"" << xname << "\" [shape=doublecircle];" << std::endl;
+      }	else {
+        std::string xlabel=
+	  "<<TABLE BORDER=\"0\"><TR><TD>" +
+	  xname +
+	  "</TD><TD WIDTH=\"2\"></TD><TD BGCOLOR=\"black\" BORDER=\"0\" WIDTH=\"8\"></TD></TR></TABLE>>";
+        stream << "  \"" << xname << "\" [ label=" << xlabel <<"];" << std::endl;
+      }
     }
     stream << std::endl;
+    // other states
     stream << "  // rest of stateset" << std::endl;
     for (lit = StatesBegin(); lit != StatesEnd(); ++lit) {
-      if (! (ExistsInitState(*lit) || ExistsMarkedState(*lit)) ) {
+      if (! ExistsMarkedState(*lit) ) {
 	std::string xname= StateName(*lit);
 	if(xname=="") xname=ToStringInteger(MinStateIndex(*lit));
 	stream << "  \"" << xname << "\";" << std::endl;
       }
     }
     stream << std::endl;
+    // transrel
     stream << "  // transition relation" << std::endl;
-    for(tit = TransRelBegin(); tit != TransRelEnd(); ++tit) {
-      std::string x1name= StateName(tit->X1);
-      if(x1name=="") x1name=ToStringInteger(MinStateIndex(tit->X1));
-      std::string x2name= StateName(tit->X2);
-      if(x2name=="") x2name=ToStringInteger(MinStateIndex(tit->X2));
-      stream << "  \"" << x1name  << "\" -> \"" << x2name
-	     << "\" [label=\"" << EventName(tit->Ev) << "\"];" << std::endl;
+    std::string elabel;
+    for(tit = trx1x2ev.Begin(); tit != trx1x2ev.End();) {
+      // accumulate label
+      if(!elabel.empty()) elabel = elabel + ", ";
+      if(elabel.length()>9) elabel = elabel + "\n";
+      elabel=elabel + EventName(tit->Ev);
+      Idx x1=tit->X1;
+      Idx x2=tit->X2;
+      bool flush=false;
+      // next transition
+      ++tit;
+      if(tit==trx1x2ev.End())
+	flush =true;
+      else
+        flush=((tit->X1 != x1) || (tit->X2 != x2));
+      // write out
+      if(flush) {
+        std::string x1name= StateName(x1);
+        if(x1name=="") x1name=ToStringInteger(MinStateIndex(x1));
+        std::string x2name= StateName(x2);
+        if(x2name=="") x2name=ToStringInteger(MinStateIndex(x2));
+        stream << "  \"" << x1name  << "\" -> \"" << x2name
+	     << "\" [label=\"" << elabel << "\"];" << std::endl;
+	elabel="";
+      }
     }
     stream << "}" << std::endl;
     stream.close();
@@ -3164,16 +3179,17 @@ void vGenerator::DoRead(TokenReader& rTr,  const std::string& rLabel, const Type
   // hypothesis: format is either "relaxed native 2.24e" or "xml"
   bool native=true;
   bool xml= true;
-  // the ftype attribute is mandatory to indicate xml format (as of 2.24e)
-  if(btag.ExistsAttributeString("ftype")) { native=false;}
+  // as of 2.24e, we used the ftype to sense XML; as og 2.33j we  have ftype also in native mode
+  // so we may need another way to detect XML
+  //if(btag.ExistsAttributeString("ftype")) { native=false;} // 2.24e
   // try name by relaxed native 2.24e
   if(native) {
-    // get name (optional)
-    std::string name="generator";
+    FD_DG("vGenerator(" << this << ")::DoRead(): relaxed native header")
+    std::string name="Generator";
     // figure name: as attribute
     if(btag.ExistsAttributeString("name")) 
       name=btag.AttributeStringValue("name");
-    // firgure name: as string token
+    // figure name: as string token
     Token token;
     rTr.Peek(token);
     if(token.IsString()) { name=rTr.ReadString(); xml=false; }
@@ -3181,6 +3197,7 @@ void vGenerator::DoRead(TokenReader& rTr,  const std::string& rLabel, const Type
   }
   // try core sets by relaxed native 2.24e
   if(native) {
+    FD_DG("vGenerator(" << this << ")::DoRead(): relaxed native core")
     // read alphabet (optional)
     ReadAlphabet(rTr);
     // read stateset (optional)
@@ -3188,6 +3205,7 @@ void vGenerator::DoRead(TokenReader& rTr,  const std::string& rLabel, const Type
     // read transrel (required --- if not present, we might have mis-sensed pre 2.24e xml)
     Token token;
     rTr.Peek(token);
+    FD_DG("vGenerator(" << this << ")::DoRead(): " << token.Str());
     if(token.IsBegin("TransRel") || token.IsBegin("T")) {
       ReadTransRel(rTr);
     } else {
@@ -3198,6 +3216,7 @@ void vGenerator::DoRead(TokenReader& rTr,  const std::string& rLabel, const Type
   }
   // try extra sets by relaxed native 2.24e
   if(native) {
+    FD_DG("vGenerator(" << this << ")::DoRead(): native extra items")
     // read istates (optional)
     Token token;
     rTr.Peek(token); 
@@ -3205,19 +3224,22 @@ void vGenerator::DoRead(TokenReader& rTr,  const std::string& rLabel, const Type
       {ReadStateSet(rTr, "InitStates", mInitStates); xml=false;}
     if(token.IsBegin("I"))
       {ReadStateSet(rTr, "I", mInitStates); xml=false;}
+    mInitStates.Name("InitStates");
     // read mstates (optional)
     rTr.Peek(token); 
     if(token.IsBegin("MarkedStates"))
-      {ReadStateSet(rTr, "MarkedStates", mMarkedStates); xml=false;}
+      {ReadStateSet(rTr, "MarkedStates", mMarkedStates); xml=false; }
     if(token.IsBegin("M"))
       {ReadStateSet(rTr, "M", mMarkedStates); xml=false;}
-    // read attribute
-    mpGlobalAttribute->Read(rTr);
+    mMarkedStates.Name("MarkedStates");
+    // read attribute (mandatory if non-void --- should be optional?)
+    mpGlobalAttribute->Read(rTr,"",this);
   }
   // if we survived, its not xml
   if(native) xml=false;
   // read strict xml format
   if(xml) {
+    FD_DG("vGenerator(" << this << ")::DoRead(): xml")
     // figure generator name
     std::string name="generator";
     if(btag.ExistsAttributeString("name")) 
@@ -3231,8 +3253,8 @@ void vGenerator::DoRead(TokenReader& rTr,  const std::string& rLabel, const Type
     // read trans rel
     XReadTransRel(rTr);
     // read attribute
-    mpGlobalAttribute->Read(rTr);
-    // fix labels
+    mpGlobalAttribute->Read(rTr,"",this);
+    // fix object names
     mInitStates.Name("InitStates");
     mMarkedStates.Name("MarkedStates");
   }
@@ -3251,6 +3273,7 @@ void vGenerator::ReadAlphabet(TokenReader& rTr) {
     mpAlphabet->Read(rTr,"Alphabet");
   if(token.IsBegin("A"))
     mpAlphabet->Read(rTr,"A");
+  mpAlphabet->Name("Alphabet");
 }
 
 // ReadStates(tr) 
@@ -3397,6 +3420,7 @@ void vGenerator::ReadStateSet(TokenReader& rTr, const std::string& rLabel, State
   while(!rTr.Eos(rLabel)) {
     // peek
     rTr.Peek(token);
+    
     // read state by index
     if(token.IsInteger()) {
       rTr.Get(token);
@@ -3404,7 +3428,7 @@ void vGenerator::ReadStateSet(TokenReader& rTr, const std::string& rLabel, State
       if(!ExistsState(index)) {
         delete attrp;
 	std::stringstream errstr;
-	errstr << "Token " << token.IntegerValue() << " not in stateset"
+	errstr << "Token " << token.IntegerValue() << " not in generator stateset"
 	       << rTr.FileLine();
 	throw Exception("vGenerator::ReadStateSet", errstr.str(), 80);
       }
@@ -3416,7 +3440,8 @@ void vGenerator::ReadStateSet(TokenReader& rTr, const std::string& rLabel, State
       rStateSet.Insert(index); 
       rStateSet.Attribute(index,*attrp);
       continue;
-    } 
+    }
+    
     // read state by name
     if(token.IsString()) {
       rTr.Get(token);
@@ -3446,24 +3471,96 @@ void vGenerator::ReadStateSet(TokenReader& rTr, const std::string& rLabel, State
       rStateSet.Insert(index); 
       rStateSet.Attribute(index,*attrp);
       continue;
-    } 
+    }
+    
+    // read state in XML style
+    if(token.IsBegin() && token.StringValue() == "State") {
+      rTr.Get(token);
+      std::string name="";
+      if(token.ExistsAttributeString("name"))
+        name=token.AttributeStringValue("name");
+      Idx index=0;
+      if(token.ExistsAttributeInteger("id"))
+        index=token.AttributeIntegerValue("id");
+      FD_DG("vGenerator::ReadStateSet(): got idx " << index << " " << name);
+      // reconstruct index from name if possible
+      if(index==0) {
+        index=StateIndex(name);
+      }
+      // failed to figure index
+      if(index==0) {
+        delete attrp;
+        std::stringstream errstr;
+        errstr << "Cannot figure index for state token " << token.Str() << rTr.FileLine();
+        throw Exception("vGenerator::ReadStateSet", errstr.str(), 80);
+      }
+      // dont allow doublets
+      if(rStateSet.Exists(index)) {
+        delete attrp;
+        std::stringstream errstr;
+        errstr << "Doublet state from token " << token.Str() << rTr.FileLine();
+        throw Exception("vGenerator::ReadStateSet", errstr.str(), 80);
+      }
+      // record state
+      rStateSet.Insert(index);
+      // record name if we read the core set
+      if(&rStateSet==mpStates) 
+      if(name!="") {
+         mpStateSymbolTable->SetEntry(index, name);
+      }
+      // test for attributes 
+      if(!rTr.Eos("State")) {	
+        FD_DG("vGenerator(" << this << ")::ReadStates(\"" << rTr.FileName() << "\"): attribute ?");
+        attrp->Read(rTr,"",this);
+        rStateSet.Attribute(index,*attrp);
+      } 
+      // read end
+      rTr.ReadEnd("State");
+      continue;
+    }
+
     // read consecutve block of anonymous states
     if(token.IsBegin() && token.StringValue() == "Consecutive") {
-      rTr.ReadBegin("Consecutive");
+      Token ctag;
+      rTr.ReadBegin("Consecutive",ctag);
+      Idx idx1=0;
+      Idx idx2=0;
       Token token1,token2;
-      rTr.Get(token1);
-      rTr.Get(token2);
-      if(!token1.IsInteger() || !token2.IsInteger()) {
+      rTr.Peek(token1);
+      // figure range a) XML    
+      if(token1.IsEnd() && token.StringValue() == "Consecutive") {
+        if(ctag.ExistsAttributeInteger("from"))
+          idx1= (Idx) ctag.AttributeIntegerValue("from");
+        if(ctag.ExistsAttributeInteger("to"))
+          idx2= (Idx) ctag.AttributeIntegerValue("to");
+      }
+      // figure range a) native
+      if(token1.IsInteger()) {
+        rTr.Get(token1);
+        rTr.Get(token2);
+        if(!token1.IsInteger() || !token2.IsInteger()) {
+          delete attrp;
+ 	  std::stringstream errstr;
+	  errstr << "Invalid range of consecutive states"  << rTr.FileLine();
+	  throw Exception("vGenerator::ReadStateSet", errstr.str(), 80);
+        }
+	idx1=token1.IntegerValue();
+	idx2=token2.IntegerValue();
+      }
+      // validate range
+      if(idx1==0 || idx2 < idx1) {
         delete attrp;
 	std::stringstream errstr;
 	errstr << "Invalid range of consecutive states"  << rTr.FileLine();
 	throw Exception("vGenerator::ReadStateSet", errstr.str(), 80);
       }
-      for(Idx index = (Idx) token1.IntegerValue(); index <= (Idx) token2.IntegerValue(); ++index) {
+      // perform range
+      FD_DG("vGenerator(" << this << ")::ReadStateSet(\"" << rTr.FileName() << "\"): consecutive range " << idx1 << " to " << idx2);    
+      for(Idx index = idx1; index <= idx2; ++index) {
 	if(!ExistsState(index)) {
+          delete attrp;
 	  std::stringstream errstr;
-	  errstr << "Token " << token.IntegerValue() << " not in stateset"
-		 << rTr.FileLine();
+	  errstr << "range not in generator stateset" << rTr.FileLine();
 	  throw Exception("vGenerator::ReadStateSet", errstr.str(), 80);
 	}
 	rStateSet.Insert(index);
@@ -3471,10 +3568,17 @@ void vGenerator::ReadStateSet(TokenReader& rTr, const std::string& rLabel, State
       rTr.ReadEnd("Consecutive");
       continue;
     }
+    
+    // Ignore other sections
+    if(token.IsBegin()) {
+      rTr.ReadEnd(token.StringValue());
+      continue;
+    }
+    
     // cannot process token
     delete attrp;
     std::stringstream errstr;
-    errstr << "Invalid token" << rTr.FileLine();
+    errstr << "Section " << rLabel << ": Invalid token" << rTr.FileLine() << ": " << token.Str();
     throw Exception("vGenerator::ReadStateSet", errstr.str(), 50);
   }
   rTr.ReadEnd(rLabel);
@@ -3713,7 +3817,7 @@ void vGenerator::ReadTransRel(TokenReader& rTr) {
   catch (faudes::Exception& oex) {
     delete attrp;
     std::stringstream errstr;
-    errstr << "Reading TransRel failed in " << rTr.FileLine() << oex.What();
+    errstr << "Reading TransRel failed in " << rTr.FileLine() << " " << oex.What();
     throw Exception("vGenerator::ReadTransRel", errstr.str(), 50); 
   }
 
@@ -3858,7 +3962,7 @@ void vGenerator::GraphWrite(const std::string& rFileName, const std::string& rOu
     DotWrite(dotin);
   } 
   catch (faudes::Exception& exception) {  
-    RemoveFile(dotin);
+    FileDelete(dotin);
     std::stringstream errstr;
     errstr << "Exception writing dot input file";
     throw Exception("vGenerator::GraphWrite", errstr.str(), 2);
@@ -3867,12 +3971,12 @@ void vGenerator::GraphWrite(const std::string& rFileName, const std::string& rOu
     faudes::ProcessDot(dotin,rFileName,rOutFormat,rDotExec);
   } 
   catch (faudes::Exception& exception) {  
-    RemoveFile(dotin);
+    FileDelete(dotin);
     std::stringstream errstr;
     errstr << "Exception processing dot file";
     throw Exception("vGenerator::GraphWrite", errstr.str(), 3);
   }
-  RemoveFile(dotin);
+  FileDelete(dotin);
 }
 
 // rti wrapper
@@ -3890,10 +3994,6 @@ bool IsTrim(const vGenerator& rGen) {
   return rGen.IsTrim();
 }
 
-// rti wrapper
-bool IsOmegaTrim(const vGenerator& rGen) {
-  return rGen.IsOmegaTrim();
-}
 
 // rti wrapper
 bool IsComplete(const vGenerator& rGen) {
@@ -3971,22 +4071,11 @@ void Trim(const vGenerator& rGen, vGenerator& rRes) {
   rRes.Trim();
 }  
 
-// rti wrapper
-void OmegaTrim(vGenerator& rGen) {
-  rGen.OmegaTrim();
-}
-
-// rti wrapper
-void OmegaTrim(const vGenerator& rGen, vGenerator& rRes) {
-  rRes=rGen;
-  rRes.OmegaTrim();
-}  
 
 // rti wrapper
 void MarkAllStates(vGenerator& rGen) {
   rGen.InjectMarkedStates(rGen.States());
 }
-
 
 // rti wrapper
 void AlphabetExtract(const vGenerator& rGen, EventSet& rRes) {
@@ -4039,7 +4128,20 @@ void SetDifference(const vGenerator& rGenA, const vGenerator& rGenB, EventSet& r
   SetDifference(rGenA.Alphabet(),rGenB.Alphabet(),rRes);
 }
 
+// rti convenience function
+void ApplyRelabelMap(const RelabelMap& rMap, const vGenerator& rGen, vGenerator& rRes) {
+  EventSet* alph=rGen.Alphabet().Copy();
+  TransSet* delta=rGen.TransRel().Copy();
+  ApplyRelabelMap(rMap,*alph,*alph);
+  ApplyRelabelMap(rMap,*delta,*delta);
+  rRes.Assign(rGen);
+  rRes.InjectTransRel(*delta);
+  rRes.InjectAlphabet(*alph);
+  delete alph;
+  delete delta;
+}
 
+  
 } // name space
 
 

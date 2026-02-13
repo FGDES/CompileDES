@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
 Copyright (C) 2006  Bernd Opitz
-Copyright (C) 2006  Thomas Moor
+Copyright (C) 2006. 2010  Thomas Moor
 Exclusive copyright is granted to Klaus Schmidt
 
 This library is free software; you can redistribute it and/or
@@ -85,6 +85,20 @@ TokenReader::TokenReader(const std::string& rFilename)
 }
 
 
+// TokenReader(stream)
+TokenReader::TokenReader(std::istream& rStream)
+  : mMode(Stream), mpStream(NULL), mFileName("anonymous") 
+{
+  FD_DV("TokenReader::Tokenreader(Stream)");
+  mpStream=&rStream;
+  // do some testing?
+  if(mpStream->bad()){
+    std::stringstream errstr;
+    errstr << "Exception opening/reading anonymous stream";
+    throw Exception("TokenReader::TokenReader", errstr.str(), 1);
+  }
+}
+
 //  destruct
 TokenReader::~TokenReader(void) {
   if(mMode==String) delete mpSStream;
@@ -140,7 +154,7 @@ bool TokenReader::Peek(Token& token) {
   }
   // get from peek buffer 
   token=mPeekToken;
-  // substitute empty sections
+  // peek begin on empty section
   if(token.IsEmpty())  token.ClrEnd();
   // done
   FD_DV("TokenReader: Peek: " << token.Str());
@@ -149,18 +163,18 @@ bool TokenReader::Peek(Token& token) {
 
 // Get(token)
 bool TokenReader::Get(Token& token) {
-  bool res;
-  // get token from peek buffer 
-  res=Peek(token);
+  // fill peek buffer
+  if(!Peek(token)) return false;
+  // get token from peek buffer
+  token=mPeekToken;
   // invalidate buffer: case a
   if(!mPeekToken.IsEmpty()) mPeekToken.SetNone();
   // invalidate buffer: case b
   if(mPeekToken.IsEmpty()) {
     FD_DV("TokenReader: fake end : " << mPeekToken.Str());
+    token.ClrEnd();
     mPeekToken.SetEnd(std::string(mPeekToken.StringValue()));
   }
-  // bail out on error
-  if(!res) return false;
   // ignore misbehavong <br> tag in by level management
   if(token.IsBegin("br") || token.IsEnd("br")) return true;
   // track state (level of nested sections, filepos etc)
@@ -200,7 +214,7 @@ bool TokenReader::Get(Token& token) {
   }
   FD_DV("TokenReader:Get(): " << token.Str());
 
-  return res;
+  return true;
 }
 
 // SeekBegin(label)
@@ -440,13 +454,7 @@ bool TokenReader::Eos(const std::string& rLabel) {
   // peek token and check for end of section
   Token token;
   Peek(token);
-  if(! (token.IsEnd() && !token.IsBegin()))
-    return false;
-  if((token.IsEnd() && !token.IsBegin())  && (token.StringValue() == rLabel))
-    return true; 
-  std::stringstream errstr;
-  errstr << "section end \"" << rLabel << "\" expected at " << FileLine();
-  throw Exception("TokenReader::Eos", errstr.str(), 51);
+  if(token.IsEnd(rLabel)) return true;
   return false;
 }
   
@@ -454,36 +462,39 @@ bool TokenReader::Eos(const std::string& rLabel) {
 // ReadInteger()
 long int TokenReader::ReadInteger(void) {
   Token token;			
-  Get(token);
+  Peek(token);
   if(!token.IsInteger()) {
     std::stringstream errstr;
     errstr << "Integer expected at " << FileLine();
     throw Exception("TokenReader::TokenReader", errstr.str(), 50);
   }
+  Get(token);
   return token.IntegerValue();
 }
 
 // ReadFloat()
 double TokenReader::ReadFloat(void) {
   Token token;			
-  Get(token);
+  Peek(token);
   if((!token.IsFloat()) && (!token.IsInteger())) {
     std::stringstream errstr;
     errstr << "Float expected at " << FileLine();
     throw Exception("TokenReader::TokenReader", errstr.str(), 50);
   }
+  Get(token);
   return token.FloatValue();
 }
 
 // ReadString()
 std::string TokenReader::ReadString(void) {
   Token token;			
-  Get(token);
+  Peek(token);
   if(!token.IsString()) {
     std::stringstream errstr;
     errstr << "String expected at " << FileLine();
     throw Exception("TokenReader::TokenReader", errstr.str(), 50);
   }
+  Get(token);
   return token.StringValue();
 }
 
@@ -491,24 +502,26 @@ std::string TokenReader::ReadString(void) {
 // ReadOption()
 std::string TokenReader::ReadOption(void) {
   Token token;			
-  Get(token);
+  Peek(token);
   if(!token.IsOption()) {
     std::stringstream errstr;
     errstr << "Option expected at " << FileLine();
     throw Exception("TokenReader::TokenReader", errstr.str(), 50);
   }
+  Get(token);
   return token.OptionValue();
 }
 
 // ReadBinary()
 void TokenReader::ReadBinary(std::string& rData) {
   Token token;			
-  Get(token);
+  Peek(token);
   if(!token.IsBinary()) {
     std::stringstream errstr;
     errstr << "Binary string expected at " << FileLine();
     throw Exception("TokenReader::TokenReader", errstr.str(), 50);
   }
+  Get(token);
   rData = token.StringValue();
 }
 

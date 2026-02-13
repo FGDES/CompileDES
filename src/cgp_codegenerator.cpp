@@ -126,7 +126,7 @@ void CodeGenerator::DoReadGenerators(TokenReader& rTr) {
     rTr.Peek(token);
     // is it a file name?
     if(token.Type()==Token::String) {
-      Insert(PrependDirectory(dirname,token.StringValue()));
+      Insert(PrependPath(dirname,token.StringValue()));
       rTr.Get(token);
       continue;
     }

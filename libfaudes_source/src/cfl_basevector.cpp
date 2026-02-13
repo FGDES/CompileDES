@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
    Copyright (C) 2006  Bernd Opitz
-   Copyright (C) 2007  Thomas Moor
+   Copyright (C) 2007, 2025  Thomas Moor
    Exclusive copyright is granted to Klaus Schmidt
 
    This library is free software; you can redistribute it and/or
@@ -25,7 +25,10 @@
 
 namespace faudes {
 
-
+// local debugging
+//#undef FD_DC
+//#define FD_DC(a) FD_WARN(a)  
+  
 /*
 ******************************************************************************************
 ******************************************************************************************
@@ -39,26 +42,28 @@ Implementation of TBaseVector
 */
 
 // faudes type std
-FAUDES_TYPE_IMPLEMENTATION(Void,vBaseVector,Type)
+FAUDES_TYPE_IMPLEMENTATION(Void,vBaseVector,ExtType)
 
 
 // vBaseVector()
 vBaseVector::vBaseVector(void) :
-  Type()
+  ExtType()
 {
   FD_DC("vBaseVector(" << this << ")::vBaseVector()");
-  // my members
-  mMyName="Vector";
+  // fix base member defaults
+  mObjectName="Vector";
+  mElementTagDef="Element";
 }
 
   
 // vBaseVector(filename)
 vBaseVector::vBaseVector(const std::string& rFileName, const std::string& rLabel)  :
-  Type()
+  ExtType()
 {
   FD_DC("vBaseVector(" << this << ")::vBaseVector()");
-  // other members
-  mMyName="Vector";
+  // fix base  member defaults
+  mObjectName="Vector";
+  mElementTagDef="Element";
   // do read;
   Read(rFileName,rLabel);  
 }
@@ -66,7 +71,7 @@ vBaseVector::vBaseVector(const std::string& rFileName, const std::string& rLabel
 
 // vBaseVector(rOtherSet)
 vBaseVector::vBaseVector(const vBaseVector& rOtherVector) : 
-  Type(rOtherVector)
+  ExtType()
 {
   FD_DC("vBaseVector(" << this << ")::vBaseVector(rOtherVector " << &rOtherVector << "): copy construct");
   DoAssign(rOtherVector);
@@ -111,16 +116,42 @@ void vBaseVector::DoAssign(const vBaseVector& rSourceVector) {
   if(this==&rSourceVector) return;
   // virtual clear
   Clear();
+  // care about base
+  mObjectName=rSourceVector.mObjectName;
+  mElementTagDef=rSourceVector.mObjectName;
   // allocate
   mVector.resize(rSourceVector.Size());
-  // copy entries
+  // copy entries (incl name)
   for(Position pos=0; pos<mVector.size(); pos++) {
     mVector[pos].pElement = rSourceVector.mVector[pos].pElement->Copy();
+    mVector[pos].pElement->Name(rSourceVector.mVector[pos].pElement->Name());
     mVector[pos].mMine=true;
     mVector[pos].mFileName="";
   }
   // done
   FD_DC("vBaseVector(" << this << ")::DoAssign(rOtherVector " << &rSourceVector << "): done");
+}
+
+// assignment (here, we know the type to match)
+void vBaseVector::AssignByReference(vBaseVector& rSourceVector) {
+  FD_DC("vBaseVector(" << this << ")::AssignByReference(rOtherVector " << &rSourceVector << ")");
+  // bail out on selfref
+  if(this==&rSourceVector) return;
+  // virtual clear
+  Clear();
+  // care about base
+  mObjectName=rSourceVector.mObjectName;
+  mElementTagDef=rSourceVector.mObjectName;
+  // allocate
+  mVector.resize(rSourceVector.Size());
+  // copy entries (incl name)
+  for(Position pos=0; pos<mVector.size(); pos++) {
+    mVector[pos].pElement = rSourceVector.mVector[pos].pElement;
+    mVector[pos].mMine=false;
+    mVector[pos].mFileName="";
+  }
+  // done
+  FD_DC("vBaseVector(" << this << ")::AssignByReference(rOtherVector " << &rSourceVector << "): done");
 }
 
 // clear
@@ -133,17 +164,19 @@ void vBaseVector::Clear(void) {
   mVector.resize(0);
 }
 
+// Test equality
+bool vBaseVector::DoEqual(const vBaseVector& rOther) const {
+  FD_DC("vBaseVector(" << this << ")::DoEqual()");
+  if(Size()!=rOther.Size()) return false;
+  Position p=0;
+  for(;p<Size();++p) {
+    bool eq= At(p).Equal(rOther.At(p));
+    FD_DF("vBaseVector(" << this << ")::DoEqual(): " << p << ": " << eq);
+    if(!eq) return false;
+  }
+  return true;
+}
 
-// Name
-const std::string& vBaseVector::Name(void) const {
-  return mMyName;
-}
-		
-// Name
-void vBaseVector::Name(const std::string& rName) {
-  mMyName = rName;
-}
-  
 // Size()
 Idx vBaseVector::Size(void) const {
   return (Idx) mVector.size();
@@ -170,11 +203,15 @@ void vBaseVector::Size(Idx len) {
 }
 
 
+// Default config
+bool vBaseVector::IsDefault(void) const {
+  return mVector.empty();
+}
+
 // Empty()
 bool vBaseVector::Empty(void) const {
   return mVector.empty();
 }
-
 
 // At()
 const Type& vBaseVector::At(const Position& pos) const {
@@ -394,6 +431,36 @@ void vBaseVector::Append(const std::string& rFileName) {
 }
  
 
+// find 
+vBaseVector::Position vBaseVector::Find(const Type& rElem) {
+  if(!ElementTry(rElem)) {
+    std::stringstream errstr;
+    errstr << "cannot cast element " << std::endl;
+    throw Exception("vBaseVector::Find(elem)", errstr.str(), 63);
+  }
+  Position pos=0;
+  for(;pos<Size();++pos) {
+    if(rElem.Equal(At(pos))) return pos;
+  }
+  return Size();
+}
+ 
+// consilidate
+void vBaseVector::EraseDoublets(void) {
+  Position i=0;
+  Position j=0;
+  while(i<Size()) {
+    j=i+1;
+    while(j<Size()) {
+     if(mVector[i].pElement->Equal(*mVector[j].pElement))
+       Erase(j);
+     else
+       ++j;
+    }
+    ++i;
+  }
+}
+ 
 // FilenameAt()
 const std::string& vBaseVector::FilenameAt(const Position& pos) const {
 #ifdef FAUDES_CHECKED
@@ -450,20 +517,51 @@ void vBaseVector::DoWrite(TokenWriter& rTw, const std::string& rLabel, const Typ
   FD_DC("vBaseVector(" << this << ")::DoWrite(..):  #" << Size());
   rTw.Write(btag);
   // loop entries
+  std::string etstr=ElementTag();
   for(Position pos=0; pos<mVector.size(); pos++) {
     // just stream tokens
     if(!ifiles) {
-      mVector[pos].pElement->Write(rTw,"",pContext);
+      mVector[pos].pElement->Write(rTw,etstr,pContext);
       continue;
     } 
     // write individual files
     std::string filename= ExtractFilename(mVector[pos].mFileName);
     rTw.WriteString(filename);
-    mVector[pos].pElement->Write(PrependDirectory(dirname,filename),"",pContext);    
+    mVector[pos].pElement->Write(PrependPath(dirname,filename),"",pContext);    
   }
   rTw.WriteEnd(btag.StringValue());
 }
 
+
+// DoXWrite(tw, label, context)
+void vBaseVector::DoXWrite(TokenWriter& rTw, const std::string& rLabel, const Type* pContext) const {
+  // figure whether we write individual files
+  bool ifiles=rTw.FileMode();
+  for(Position pos=0; pos<mVector.size() && ifiles; pos++) 
+    if(mVector[pos].mFileName=="") ifiles=false;
+  // extract base directory
+  std::string dirname="";
+  if(rTw.FileMode()) 
+    dirname = ExtractDirectory(rTw.FileName());
+  // have a section
+  Token btag=XBeginTag(rLabel,"Vector");
+  FD_DC("vBaseVector(" << this << ")::DoWrite(..):  #" << Size());
+  rTw.Write(btag);
+  // loop entries
+  std::string etstr=ElementTag();
+  for(Position pos=0; pos<mVector.size(); pos++) {
+    // just stream tokens
+    if(!ifiles) {
+      mVector[pos].pElement->XWrite(rTw,etstr,pContext);
+      continue;
+    } 
+    // write individual files
+    std::string filename= ExtractFilename(mVector[pos].mFileName);
+    rTw.WriteString(filename); // << should we have a tag?
+    mVector[pos].pElement->XWrite(PrependPath(dirname,filename),"",pContext);    
+  }
+  rTw.WriteEnd(btag.StringValue());
+}
 
 // DoDWrite(tw,rLabel,context)
 void vBaseVector::DoDWrite(TokenWriter& rTw,const std::string& rLabel, const Type* pContext) const {
@@ -492,31 +590,35 @@ void vBaseVector::DoSWrite(TokenWriter& rTw) const {
 
 // DoRead(rTr, rLabel, pContext)
 void vBaseVector::DoRead(TokenReader& rTr, const std::string& rLabel, const Type* pContext) {
-  //prepare token
-  Token token;
-  //prepare string 
-  std::string filename = "";      
-  std::string dirname = "";       
-  std::string path;               
-  // have default section
+  // set up defaults
   std::string label=rLabel;
-  if(label=="") label="Vector"; 
+  std::string ftype=TypeName();
+  std::string etstr=ElementTag();
+  std::string etype=ElementType();;
+  // figure section
+  Token token;
+  if(label=="") {
+    rTr.Peek(token);
+    if(token.Type()==Token::Begin) label=token.StringValue();
+  }
+  if(label=="") label=ftype; 
   Name(label);
-  rTr.ReadBegin(label); 
+  rTr.ReadBegin(label,token); 
   // fill my entries from token stream
   while(!rTr.Eos(label)){
     //peek token
     rTr.Peek(token);
-    // if Token is a String we assume its the name of a file containing a device
+    // if Token is a String we assume its the name of a file containing an element
     if(token.Type()==Token::String) {
       //read Token
       rTr.Get(token);
       // read relative filename
-      filename = token.StringValue();
+      std::string filename = token.StringValue();
       // build up path to base-file
+      std::string dirname;
       if(rTr.SourceMode()==TokenReader::File) dirname = ExtractDirectory(rTr.FileName());
       //build up path to specified file
-      path = dirname.append(filename);
+      std::string path = dirname.append(filename);
       //insert device
       Insert(mVector.size(),path);
       continue;
@@ -526,8 +628,8 @@ void vBaseVector::DoRead(TokenReader& rTr, const std::string& rLabel, const Type
       // prepare
       Type* elemp = NewElement();
       // read entry
-      elemp->Read(rTr);
-      // insert device mDevices
+      elemp->Read(rTr,etstr,pContext);
+      // insert to vector
       Insert(mVector.size(),elemp);
       // fix ownership
       (--mVector.end())->mMine=true;

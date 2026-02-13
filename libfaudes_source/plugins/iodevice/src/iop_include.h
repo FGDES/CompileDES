@@ -21,7 +21,7 @@
 
 /**
  
-@defgroup IODevicePlugin I/O Device PlugIn
+@defgroup IODevicePlugin I/O Device Plug-In
 
 
 @ingroup AllPlugins
@@ -48,7 +48,7 @@ abstraction layer adapts relevant system calls for Windows and, thus, provides
 the Modbus device and the Simplenet device.
 </p>
 
-@section License
+@section IodLicense License
 
 <p>
 This plug-in is distributed with libFAUDES and under the terms of the LGPL. 

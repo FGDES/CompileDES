@@ -955,8 +955,8 @@ void Bisimulation::computeInfoMap(Pnode& B, Pnode& Bstates, Idx ev, vector<Idx>&
 // -- this did not help performance
 void Bisimulation::setInfoMap(Pnode& BSmaller, Pnode& BLarger, Idx ev) {
 
-  FD_DF("Bisimulation::setInfoMap(" << B.index << "," << Bstates.index << "," << gen->EventName(ev) << ", Stateset&)");
-  FD_DF("Bisimulation::setInfoMap: consider stateSet of coset " << Bstates.index);
+  //FD_DF("Bisimulation::setInfoMap(" << B.index << "," << Bstates.index << "," << gen->EventName(ev) << ", Stateset&)");
+  //FD_DF("Bisimulation::setInfoMap: consider stateSet of coset " << Bstates.index);
 
   // clear info
   vector<State>::iterator sit=states.begin();
@@ -1268,10 +1268,10 @@ Minimal application interface based on plain functions.
 ********************************************* 
 */
 
-// calcBisimulation(rGenOrig, rMapStateToPartition)
-void calcBisimulation(const Generator& rGenOrig, map<Idx,Idx>& rMapStateToPartition)
+// ComputeBisimulation(rGenOrig, rMapStateToPartition)
+void ComputeBisimulation(const Generator& rGenOrig, map<Idx,Idx>& rMapStateToPartition)
 {
-  FD_DF("calcBisimulation(" << rGenOrig.Name() << ", rMapStateToPartition)");
+  FD_DF("ComputeBisimulation(" << rGenOrig.Name() << ", rMapStateToPartition)");
   // Construct an instance of the Bisimulation class from rGenOrig
   Bisimulation bisim = Bisimulation(rGenOrig);
   // method to compute the bisimulation on rGenOrig
@@ -1282,13 +1282,13 @@ void calcBisimulation(const Generator& rGenOrig, map<Idx,Idx>& rMapStateToPartit
   bisim.writeW();
   bisim.writeRo();
 #endif
-  FD_DF("calcBisimulation: leaving function");    
+  FD_DF("ComputeBisimulation: leaving function");    
 }
 
-// calcBisimulation(rGenOrig, rMapStateToPartition, rGenPart)
-void calcBisimulation(const Generator& rGenOrig, map<Idx,Idx>& rMapStateToPartition, Generator& rGenPart)
+// ComputeBisimulation(rGenOrig, rMapStateToPartition, rGenPart)
+void ComputeBisimulation(const Generator& rGenOrig, map<Idx,Idx>& rMapStateToPartition, Generator& rGenPart)
 {
-  FD_DF("calcBisimulation(" << rGenOrig.Name() << ", rMapStateToPartition, " << rGenPart.Name() << ")");
+  FD_DF("ComputeBisimulation(" << rGenOrig.Name() << ", rMapStateToPartition, " << rGenPart.Name() << ")");
   // Construct an instance of the Bisimulation class from rGenOrig
   Bisimulation bisim = Bisimulation(rGenOrig);
   // method to compute the bisimulation on rGenOrig
@@ -1299,13 +1299,13 @@ void calcBisimulation(const Generator& rGenOrig, map<Idx,Idx>& rMapStateToPartit
   bisim.writeW();
   bisim.writeRo();
 #endif
-  FD_DF("calcBisimulation: leaving function");
+  FD_DF("ComputeBisimulation: leaving function");
 }
 
-// calcBisimulation(rGenOrig, rPartition)
-void calcBisimulation(const Generator& rGenOrig, std::list< StateSet >& rPartition)
+// ComputeBisimulation(rGenOrig, rPartition)
+void ComputeBisimulation(const Generator& rGenOrig, std::list< StateSet >& rPartition)
 {
-  FD_DF("calcBisimulation(" << rGenOrig.Name() << ", rPartition)");
+  FD_DF("ComputeBisimulation(" << rGenOrig.Name() << ", rPartition)");
   // Construct an instance of the Bisimulation class from rGenOrig
   Bisimulation bisim = Bisimulation(rGenOrig);
   // method to compute the bisimulation on rGenOrig
@@ -1316,7 +1316,7 @@ void calcBisimulation(const Generator& rGenOrig, std::list< StateSet >& rPartiti
   bisim.writeW();
   bisim.writeRo();
 #endif
-  FD_DF("calcBisimulation: leaving function");
+  FD_DF("ComputeBisimulation: leaving function");
 }
 
 

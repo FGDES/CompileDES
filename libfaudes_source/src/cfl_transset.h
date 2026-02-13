@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
 Copyright (C) 2006  Bernd Opitz
-Copyright (C) 2007  Thomas Moor
+Copyright (C) 2007,2024  Thomas Moor
 
 Exclusive copyright is granted to Klaus Schmidt
 
@@ -233,19 +233,23 @@ class FAUDES_API TransSort {
  * by the generator class (although TTransSet provides basic output functions for debugging)
  */
 
-// tweak: this appears to be a g** 4.2 (OsX) issue --- fails dynamic cast if this symbol is not explicitly exposed
-#ifdef __GNUC__
+// tweak: this appears to be a g++ 4.2 (OsX) issue --- fails at dynamic cast if this symbol is not explicitly exposed
+//#ifdef __GNUC__
+//template <class Cmp=TransSort::X1EvX2>
+//class FAUDES_API TTransSet : public TBaseSet<Transition,Cmp> {
+//#else
 template <class Cmp=TransSort::X1EvX2>
-class FAUDES_API TTransSet : public TBaseSet<Transition,Cmp> {
-#else
-template <class Cmp=TransSort::X1EvX2>
-class TTransSet : public TBaseSet<Transition,Cmp> {
-#endif
+class FAUDES_TAPI TTransSet : public TBaseSet<Transition,Cmp> {
+//#endif
 
 FAUDES_TYPE_DECLARATION(TransSet,TTransSet,(TBaseSet<Transition,Cmp>))
 
 
   public:
+
+  using TBaseSet<Transition,Cmp>::operator=;
+  using TBaseSet<Transition,Cmp>::operator==;
+  using TBaseSet<Transition,Cmp>::operator!=;
 
   /** @name Constructors & Destructor */ 
   /** @{ doxygen group */
@@ -256,7 +260,8 @@ FAUDES_TYPE_DECLARATION(TransSet,TTransSet,(TBaseSet<Transition,Cmp>))
   /**
    * Copy-constructor
    */
-  TTransSet(const TBaseSet<Transition,Cmp>& rOtherSet);
+  //TTransSet(const TBaseSet<Transition,Cmp>& rOtherSet);
+  TTransSet(const TTransSet<Cmp>& rOtherSet);
 
   /**
    * Re-Sort Copy-constructor
@@ -501,8 +506,6 @@ FAUDES_TYPE_DECLARATION(TransSet,TTransSet,(TBaseSet<Transition,Cmp>))
    *
    * @param x1
    *   Predecessor state Idx
-   * @param ev
-   *   Event Idx
    *
    * @return
    *   bool
@@ -521,9 +524,8 @@ FAUDES_TYPE_DECLARATION(TransSet,TTransSet,(TBaseSet<Transition,Cmp>))
    */
   bool ExistsByX1OrX2(Idx x) const;
 
-
-
   /** @} doxygen group */
+
 
   /** @name Transition iterators 
    *
@@ -780,6 +782,44 @@ FAUDES_TYPE_DECLARATION(TransSet,TTransSet,(TBaseSet<Transition,Cmp>))
 
   /** @} doxygen group */
 
+  /** @name Set Operators
+   *
+   * Reimplement boolean operators.
+   *
+   */
+ 
+  /** @{ doxygen group: operators */
+
+
+  /**
+   * Set union operator
+   *
+   * @return 
+   *   Union Set
+   *
+   */
+  TTransSet<Cmp> operator + (const TTransSet<Cmp>& rOtherSet) const;
+
+  /**
+   * Set difference operator
+   *
+   * @return 
+   *   Set Difference NameSet
+   *
+   */
+  TTransSet<Cmp> operator - (const TTransSet<Cmp>& rOtherSet) const;
+
+  /**
+   * Set intersection operator
+   *
+   * @return 
+   *   Set Intersection
+   *
+   */
+  TTransSet<Cmp> operator * (const TTransSet<Cmp>& rOtherSet) const;
+
+  /** @} doxygen group */
+
   /** @name Misc */
   /** @{ doxygen group */
 
@@ -851,6 +891,60 @@ FAUDES_TYPE_DECLARATION(TransSet,TTransSet,(TBaseSet<Transition,Cmp>))
 
 
   /**
+   * Get set of predecessor states for specified target state
+   * This function requires sorting TransSort::X2EvX1 or TransSort::X2X1Ev  
+   * 
+   * @param x2
+   *   Target state
+   *
+   * @return
+   *   Set of state indices
+   */
+  StateSet PredecessorStates(Idx x2) const;
+
+  
+  /**
+   * Get set of predecessor states for specified target states
+   * This function requires sorting TransSort::X2EvX1 or TransSort::X2X1Ev  
+   * 
+   * @param rX2Set
+   *   Sarget states
+   *
+   * @return
+   *   Set of state indices
+   */
+  StateSet PredecessorStates(const StateSet& rX2Set) const;
+
+  /**
+   * Get set of predecessor states for specified targetstate and event
+   * This function requires sorting TransSort::X2EvX1 or TransSort::X2X1Ev  
+   * 
+   * @param x2
+   *   Target state
+   * @param ev
+   *   Event
+   *
+   * @return
+   *   Set of state indices
+   */
+  StateSet PredecessorStates(Idx x2, Idx ev) const;
+
+  /**
+   * Get set of predecessor states for specified target states and events
+   * This function requires sorting TransSort::X2EvX1 or TransSort::X2X1Ev  
+   * 
+   * @param rX2Set
+   *   Target states
+   * @param rEvSet
+   *   Events
+   *
+   * @return
+   *   Set of state indices
+   */
+  StateSet PredecessorStates(const StateSet& rX2Set, const EventSet&  rEvSet) const;
+
+
+  /**
    * Get set of events that are active for a specified current state
    * Since a transition set does not refer to a SymbolTable, this function
    * returns a set of plain indices. In order to interpret the set as an EventSet, 
@@ -877,7 +971,16 @@ FAUDES_TYPE_DECLARATION(TransSet,TTransSet,(TBaseSet<Transition,Cmp>))
    * @return
    *   String
    */
-  std::string Str(const Transition& rTrans) const;
+  virtual std::string Str(const Transition& rTrans) const;
+
+  /**
+   * Return pretty printable string representation.
+   * Primary meant for debugging messages.
+   *
+   * @return
+   *   String
+   */
+   virtual std::string Str(void) const;
 
 
   /** @} doxygen group */
@@ -890,8 +993,6 @@ FAUDES_TYPE_DECLARATION(TransSet,TTransSet,(TBaseSet<Transition,Cmp>))
    *
    * @param rSource 
    *    Source to copy from
-   * @return
-   *    Ref to this set
    */
   void DoAssign(const TTransSet& rSource);
 
@@ -952,11 +1053,15 @@ typedef TTransSet<TransSort::X1X2Ev> TransSetX1X2Ev;
 
 
 template <class Attr>
-class FAUDES_API TaTransSet : public TransSet, public TAttrMap<Transition,Attr,TransSort::X1EvX2> {
+class FAUDES_TAPI TaTransSet : public TransSet, public TAttrMap<Transition,Attr,TransSort::X1EvX2> {
 
 FAUDES_TYPE_DECLARATION(Void,TaTransSet,TransSet)
 
 public:
+
+  using TransSet::operator=;
+  using TransSet::operator==;
+  using TransSet::operator!=;
 
 
   /** @name Constructors & Destructor */ 
@@ -1166,12 +1271,30 @@ public:
    *
    * @param rSource 
    *    Source to copy from
-   * @return
-   *    Ref to this set
    */
   void DoAssign(const TaTransSet& rSource);
 
 };
+
+
+
+/**
+ * Apply relable map to nameset
+ *
+ * This implementation tries to keep the attributes from the
+ * domain elements.
+ *
+ * @param rMap
+ *  map to apply
+ * @param rSet
+ *  set to apply the map to
+ * @param rRes
+ *  relabled set
+ * @exceptions
+ *  - symboltable must match
+ */
+extern FAUDES_API void ApplyRelabelMap(const RelabelMap& rMap, const TransSet& rSet, TransSet& rRes);
+  
 
 /** @} doxygen group*/
 
@@ -1200,7 +1323,8 @@ TEMP THIS::TTransSet(void) : BASE()
 }
 
 // TTransSet(othertransrel)
- TEMP THIS::TTransSet(const TBaseSet<Transition,Cmp>& rOtherSet) : 
+//TEMP THIS::TTransSet(const TBaseSet<Transition,Cmp>& rOtherSet) : 
+ TEMP THIS::TTransSet(const TTransSet<Cmp>& rOtherSet) :
   BASE()
 {
   FD_DC("TTransSet(" << this << ")::TTransSet(rOtherSet "<< &rOtherSet <<")");
@@ -1386,6 +1510,27 @@ TEMP typename THIS::Iterator THIS::EndByX2Ev(Idx x2, Idx ev) const {
   return THIS::ThisIterator(BASE::pSet->lower_bound(tlx));
 }
 
+// operator+
+TEMP THIS THIS::operator+ (const TTransSet<Cmp>& rOtherSet) const {
+  TTransSet<Cmp> res(*this);
+  res.InsertSet(rOtherSet);
+  return res;
+}
+
+// operator-
+TEMP THIS THIS::operator- (const TTransSet<Cmp>& rOtherSet) const {
+  TTransSet<Cmp> res(*this);
+  res.EraseSet(rOtherSet);
+  return res;
+}
+
+     
+// operator*
+TEMP TTransSet<Cmp> THIS::operator* (const TTransSet<Cmp>& rOtherSet) const {
+  TTransSet<Cmp> res(*this);
+  res.RestrictSet(rOtherSet);
+  return res;
+}
 
 
 // DoWrite(rw,label)
@@ -1432,7 +1577,7 @@ TEMP void THIS::Inject(const Transition& t) {
 
 // Erase(transition)
 TEMP bool THIS::Erase(const Transition& t) {
-  FD_DC("TTransSet(" << this << ")::Erase(" << Str() << " [t])");
+  FD_DC("TTransSet(" << this << ")::Erase(" << t.Str() << " [t])");
   return BASE::Erase(t);  
 }
     
@@ -1444,7 +1589,7 @@ TEMP bool THIS::Erase(Idx x1, Idx ev, Idx x2) {
 
 // Erase(it)
 TEMP typename THIS::Iterator THIS::Erase(const Iterator& it) {
-  FD_DC("TTransSet(" << this << ")::Erase(" << this->Str(*it)  << " [it])");
+  FD_DC("TTransSet(" << this << ")::Erase(" << this->EStr(*it)  << " [it])");
   return BASE::Erase(it);
 }
 
@@ -1761,6 +1906,97 @@ TEMP StateSet THIS::SuccessorStates(const StateSet&  rX1Set, const EventSet& rEv
   return states;
 }
 
+// PredecessorStates(x2)
+TEMP StateSet THIS::PredecessorStates(Idx x2) const {
+#ifdef FAUDES_CHECKED
+  if(typeid(Cmp)!=typeid(TransSort::X2EvX1)) 
+    if(typeid(Cmp)!=typeid(TransSort::X2X1Ev)) 
+      SORT_EXCEPTION;
+#endif
+  StateSet states;
+  Iterator it = BeginByX2(x2);
+  Iterator it_end = EndByX2(x2);
+  while (it != it_end) {
+    states.Insert(it->X1);
+    ++it;
+  }
+  return states;
+}
+
+
+// PredecessorStates(x2set)
+TEMP StateSet THIS::PredecessorStates(const StateSet&  rX2Set) const {
+#ifdef FAUDES_CHECKED
+  if(typeid(Cmp)!=typeid(TransSort::X2EvX1)) 
+    if(typeid(Cmp)!=typeid(TransSort::X2X1Ev)) 
+      SORT_EXCEPTION;
+#endif
+  StateSet states;
+  StateSet::Iterator sit= rX2Set.Begin();
+  StateSet::Iterator sit_end= rX2Set.End();
+  for(;sit!=sit_end; ++sit) {
+    Iterator tit = BeginByX2(*sit);
+    Iterator tit_end = EndByX2(*sit);
+    while(tit!=tit_end) {
+      states.Insert(tit->X1);
+      ++tit;
+    }
+  }
+  return states;
+}
+
+// PredecessorStates(x2, ev)
+TEMP StateSet THIS::PredecessorStates(Idx x2, Idx ev) const {
+#ifdef FAUDES_CHECKED
+  if(typeid(Cmp)!=typeid(TransSort::X2EvX1)) 
+      SORT_EXCEPTION;
+#endif
+  StateSet states;
+  Iterator it = BeginByX2Ev(x2, ev);
+  Iterator it_end = EndByX2Ev(x2, ev);
+  while (it != it_end) {
+    states.Insert(it->X1);
+    ++it;
+  }
+  return states;
+}
+
+// PredecessorStates(x2set, evset)
+TEMP StateSet THIS::PredecessorStates(const StateSet&  rX2Set, const EventSet& rEvSet) const {
+#ifdef FAUDES_CHECKED
+  if(typeid(Cmp)!=typeid(TransSort::X2EvX1)) 
+      SORT_EXCEPTION;
+#endif
+  StateSet states;
+  if(rEvSet.Empty()) return states;
+  StateSet::Iterator sit= rX2Set.Begin();
+  StateSet::Iterator sit_end= rX2Set.End();
+  for(;sit!=sit_end; ++sit) {
+    EventSet::Iterator eit= rEvSet.Begin();
+    EventSet::Iterator eit_end= rEvSet.End();
+    Iterator tit = BeginByX2Ev(*sit,*eit);
+    Iterator tit_end = EndByX2(*sit);
+    while(tit!=tit_end) {
+      // match
+      if(tit->Ev == *eit) {
+        states.Insert(tit->X1);
+        ++tit;
+        continue;
+      }
+      // tit behind
+      if(tit->Ev < *eit) {
+        ++tit;
+        continue;
+      }
+      // tit upfront
+      ++eit;
+      if(eit==eit_end) break;
+    }
+  }
+  return states;
+}
+
+
 // ActiveEvents(x1,pSymTab)
 TEMP EventSet THIS::ActiveEvents(Idx x1, SymbolTable* pSymTab) const {
   Iterator it = Begin(x1);
@@ -1773,10 +2009,24 @@ TEMP EventSet THIS::ActiveEvents(Idx x1, SymbolTable* pSymTab) const {
   return result;
 }
 
-// Prettz printable sring
+// Pretty printable string
 TEMP std::string THIS::Str(const Transition& rTrans) const { 
   return rTrans.Str();
 } 
+
+// Pretty printable string 
+TEMP std::string THIS::Str(void) const { 
+  std::stringstream str;
+  str << "[" << THIS::Name() << "]" << std::endl;
+  Iterator eit=Begin();
+  Iterator eit_end=End();
+  if(THIS::Size()>0) while(true) {
+    str << Str(*(eit++));
+    if(eit==eit_end) break;
+    str << std::endl;
+  }
+  return str.str();
+}
 
 
 

@@ -116,7 +116,7 @@ FAUDES_TYPE_DECLARATION(ModbusDevice,mbDevice,mbDevice)
    *    Remote device id
    * @param mbaddr
    *    bitaddress within the remote device
-   * @param count
+   * @param cnt
    *    number of output bits to bw written
    * @param fdaddr 
    *    address within local process image
@@ -133,7 +133,7 @@ FAUDES_TYPE_DECLARATION(ModbusDevice,mbDevice,mbDevice)
    *    Remote device id
    * @param mbaddr
    *    bitaddress within the remote device
-   * @param count
+   * @param cnt
    *    number of input bits to bw read
    * @param fdaddr 
    *    address within local process image

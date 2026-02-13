@@ -337,7 +337,7 @@ extern FAUDES_API bool ComputeScc(
 
 
 /**
- * Compute one strongly connected components (SCC) 
+ * Compute one strongly connected component (SCC) 
  *
  * This functions searchs for the first SCC of the generator rGen 
  * while applying the filter rFilter; see SCCFilter for details.

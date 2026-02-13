@@ -3,7 +3,7 @@
 /* FAU Discrete Event Systems Library (libfaudes)
 
    Copyright (C) 2006  Bernd Opitz
-   Copyright (C) 2007  Thomas Moor
+   Copywrite (C) 2007, 2024 Thomas Moor
    Exclusive copyright is granted to Klaus Schmidt
 
    This library is free software; you can redistribute it and/or
@@ -26,7 +26,12 @@
 
 namespace faudes {
 
+// faudes type std
+FAUDES_TYPE_IMPLEMENTATION(Void,SymbolTable,Type)
 
+// Autoregister  for xml output
+AutoRegisterType<SymbolTable> gRtiSymboltable("Symboltable");
+  
 // constructor
 SymbolTable:: SymbolTable(void) :
   mMyName("SymbolTable"),

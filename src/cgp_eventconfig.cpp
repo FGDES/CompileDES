@@ -3,7 +3,7 @@
 /*
   FAU Discrete Event Systems Library (libFAUDES)
 
-  Copyright (C) 2010, Thomas Moor
+  Copyright (C) 2010-2025 Thomas Moor
 
 */
 
@@ -287,6 +287,6 @@ void AttributeCodeGeneratorEvent::DoRead(TokenReader& rTr, const std::string& rL
 
 // register type for XML token-io
 AutoRegisterType<cgEventSet> gRtiRegisterCodeGeneratorAlphabet("CodeGeneratorAlphabet");
-AutoRegisterXElementTag<cgEventSet> gRtiRegisterCodeGeneratorAlphabetElementTagAlphabet("CodeGeneratorAlphabet", "Event");
+AutoRegisterElementTag<cgEventSet> gRtiRegisterCodeGeneratorAlphabetElementTagAlphabet("CodeGeneratorAlphabet", "Event");
 
 

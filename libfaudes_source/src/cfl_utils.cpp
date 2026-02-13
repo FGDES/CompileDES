@@ -1,4 +1,4 @@
-/** @file cfl_helper.cpp   Helper functions */
+/** @file cfl_utils.cpp   C-level utility functions */
 
 /* FAU Discrete Event Systems Library (libfaudes)
 
@@ -23,7 +23,7 @@
 */
 
 
-#include "cfl_helper.h"
+#include "cfl_utils.h"
 
 
 // Debug includes
@@ -107,6 +107,16 @@ Idx ToIdx(const std::string& rString) {
   return (Idx) ul;
 }
 
+// ToLOwerCase(rString(  
+std::string ToLowerCase(const std::string& rString) {
+  std::string res=rString;
+  std::transform(res.begin(), res.end(), res.begin(),
+    [](unsigned char c){ return std::tolower(c); });
+  return res;
+}
+
+
+
 // String Substitution
 std::string StringSubstitute(const std::string& rString,const std::string& rFrom,const std::string& rTo) {
   // prep result
@@ -132,15 +142,34 @@ std::string VersionString() {
 	return std::string(FAUDES_VERSION);
 }
 
-// FDPluginsString()
+// FluginsString()
 std::string PluginsString() {
   return std::string(FAUDES_PLUGINS);
 }
 
-// FDContributorsString()
+// ContributorsString()
 std::string ContributorsString() {
   return 
-    "Ramon Barakat, Ruediger Berndt, Christian Breindl, Christine Baier, Tobias Barthel, Christoph Doerr, Marc Duevel, Norman Franchi, Stefan Goetz, Rainer Hartmann, Jochen Hellenschmidt, Stefan Jacobi, Matthias Leinfelder, Tomas Masopust, Michael Meyer, Andreas Mohr, Thomas Moor, Mihai Musunoi, Bernd Opitz, Katja Pelaic, Irmgard Petzoldt, Sebastian Perk, Thomas Rempel, Daniel Ritter, Berno Schlein, Ece Schmidt, Klaus Schmidt, Anne-Kathrin Schmuck, Sven Schneider, Matthias Singer, Ulas Turan, Christian Wamser, Zhengying Wang, Thomas Wittmann, Shi Xiaoxun, Yang Yi, Jorgos Zaddach, Hao Zhou, Christian Zwick, et al";
+    "Ramon Barakat, Ruediger Berndt, Christian Breindl, Christine Baier, Tobias Barthel, Christoph Doerr, Marc Duevel, Norman Franchi, Stefan Goetz, Rainer Hartmann, Jochen Hellenschmidt, Stefan Jacobi, Matthias Leinfelder, Tomas Masopust, Michael Meyer, Andreas Mohr, Thomas Moor, Mihai Musunoi, Bernd Opitz, Katja Pelaic, Irmgard Petzoldt, Sebastian Perk, Thomas Rempel, Daniel Ritter, Berno Schlein, Ece Schmidt, Klaus Schmidt, Anne-Kathrin Schmuck, Sven Schneider, Matthias Singer, Yiheng Tang, Ulas Turan, Christian Wamser, Zhengying Wang, Thomas Wittmann, Shi Xiaoxun, Changming Yang, Yang Yi, Jorgos Zaddach, Hao Zhou, Christian Zwick, et al";
+}
+
+#define XLITSTR(x) LITSTR(x)
+#define LITSTR(x) #x
+  
+// ContributorsString()
+std::string BuildString() {
+  std::string res;
+#ifdef FAUDES_BUILDENV
+  res = res + std::string(XLITSTR(FAUDES_BUILDENV));
+#else  
+  res = res + std::string("generic");
+#endif
+#ifdef FAUDES_BUILDTIME  
+  res = res + std::string(" ") + std::string(XLITSTR(FAUDES_BUILDTIME));
+#else
+  res = res + std::string(" ") + std::string(FAUDES_CONFIG_TIMESTAMP);
+#endif  
+  return res;
 }
 
 
@@ -200,6 +229,20 @@ void ProcessDot(const std::string& rDotFile,
 }
 
 
+// test executable  
+bool DotReady(const std::string& rDotExec) {  
+  // cache value
+  static bool ready=false;  
+  static bool known=false;
+  if(known) return ready;    
+  // test for dot binary
+  std::string testdot = rDotExec + " -V";
+  ready = (system(testdot.c_str()) == 0);
+  known = true;
+  return ready;
+}
+  
+
 // CreateTempFile(void)
 // todo: sys dependant, report, investigate threads
 std::string CreateTempFile(void) {
@@ -250,14 +293,6 @@ std::string CreateTempFile(void) {
   return(res);
 }
 
-
-// RemoveFile(void)
-// todo: sys dependant *
-bool RemoveFile(const std::string& rFileName) {
-  return std::remove(rFileName.c_str()) == 0;
-}
-
-
 // ExtractPath
 std::string ExtractDirectory(const std::string& rFullPath) {
   std::string res="";
@@ -290,8 +325,8 @@ std::string ExtractBasename(const std::string& rFullPath) {
   return res;
 }
 
-// ExtractExtension
-std::string ExtractExtension(const std::string& rFullPath) {
+// ExtractSuffix
+std::string ExtractSuffix(const std::string& rFullPath) {
   std::string res=rFullPath;
   std::size_t seppos = res.find_last_of(faudes_pathseps());
   if(seppos!=std::string::npos) {
@@ -306,13 +341,31 @@ std::string ExtractExtension(const std::string& rFullPath) {
 }
 
 // PrependPath
-std::string PrependDirectory(const std::string& rDirectory, const std::string& rFileName) {
-  std::string res=rDirectory;
+std::string PrependPath(const std::string& rLeft, const std::string& rRight) {
+  // bail out in trivial args
+  if(rLeft=="")
+    return std::string(rRight);
+  if(rRight=="")
+    return std::string(rLeft);
+  // system default
   char sepchar=faudes_pathsep().at(0);
-  if(res!="")
+  // user overwrite by left argument
+  std::size_t seppos;
+  seppos=rLeft.find_last_of(faudes_pathseps());
+  if(seppos!=std::string::npos) 
+    sepchar=rLeft.at(seppos);
+  // go doit  
+  std::string res=rLeft;
   if(res.at(res.length()-1)!=sepchar)
     res.append(1,sepchar);
-  res.append(rFileName);
+  if(rRight.at(0)!=sepchar){
+    res.append(rRight);
+    return res;
+  }
+  if(rRight.length()<=1) {
+    return res;
+  }
+  res.append(rRight,1,std::string::npos);  
   return res;
 }
 
@@ -325,7 +378,7 @@ bool DirectoryExists(const std::string& rDirectory) {
   return thedir!= 0;
 #endif
 #ifdef FAUDES_WINDOWS
-  DWORD fattr = GetFileAttributesA(rDirectory.c_str());
+  DWORD fattr = GetFileAttributesA(faudes_extpath(rDirectory).c_str());
   return 
     (fattr!=INVALID_FILE_ATTRIBUTES) && (fattr & FILE_ATTRIBUTE_DIRECTORY); 
 #endif
@@ -393,7 +446,7 @@ bool FileCopy(const std::string& rFromFile, const std::string& rToFile) {
 // ConsoleOut class
 // Note: console-out is not re-entrant; for multithreaded applications
 // you must derive a class that has built-in mutexes; 
-ConsoleOut::ConsoleOut(void) : pStream(NULL), mMute(false) , mVerb(0) {
+ConsoleOut::ConsoleOut(void) : pStream(NULL), mVerb(1) {
   pInstance=this;
 }
 ConsoleOut::~ConsoleOut(void) {
@@ -419,13 +472,12 @@ void ConsoleOut::ToFile(const std::string& filename) {
   pStream = new std::ofstream();
   pStream->open(mFilename.c_str(),std::ios::app);
 }
-  void ConsoleOut::Write(const std::string& message,long int cntnow, long int cntdone, int verb) {
-  if(mMute) return;
-  if(mVerb<verb) return;
+void ConsoleOut::Write(const std::string& message,long int cntnow, long int cntdone, int verb) {
   DoWrite(message,cntnow,cntdone,verb);
 }
-  void ConsoleOut::DoWrite(const std::string& message,long int cntnow, long int cntdone, int verb) {
-    (void) cntnow; (void) cntdone; (void) verb;
+void ConsoleOut::DoWrite(const std::string& message,long int cntnow, long int cntdone, int verb) {
+  (void) cntnow; (void) cntdone; 
+  if(mVerb<verb) return;
   std::ostream* sout=pStream;
   if(!sout) sout=&std::cout; // tmoor: used to be std::cerr, using std::cout to facilitate emscripten/js
   *sout << message;
@@ -434,7 +486,27 @@ void ConsoleOut::ToFile(const std::string& filename) {
 
 // global instance
 ConsoleOut* ConsoleOut::smpInstance=NULL;
- 
+
+/** API wrapper Print at verbosity */
+void Print(int v, const std::string& message) {
+  // print
+  std::ostringstream line;
+  line << "FAUDES_PRINT: " <<  message << std::endl;
+  faudes::ConsoleOut::G()->Write(line.str(),0,0,v);
+  // still do loop callback
+  LoopCallback();
+}
+void Print(const std::string& message) {
+  Print(1,message);
+}
+
+/** API wrapper get/set verbosity */
+void Verbosity(int v) {
+  faudes::ConsoleOut::G()->Verb(v);
+}
+int Verbosity(void) {
+  return faudes::ConsoleOut::G()->Verb();
+}
 
 
 // debugging: objectcount

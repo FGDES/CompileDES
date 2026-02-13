@@ -1,5 +1,5 @@
 #
-# GNU-Make Makefile for libFAUDES application CompileDES for Mac OsX and Linux
+# GNU-Make Makefile for libFAUDES application CompileDES for OsX, Linux and MSYS
 #
 
 # 
@@ -7,11 +7,28 @@
 #
 
 # set version information (optional)
-COMPILEDES_VERSION = 3.13
+COMPILEDES_VERSION = 3.14
 DEFINES+= -DCOMPILEDES_VERSION=\"$(COMPILEDES_VERSION)\"
 
-# libfaudes compiled library and headers 
-LIBFAUDES=./libfaudes_linux
+# libFAUDES compiled library and headers 
+LIBFAUDES=./libFAUDES_lib
+
+# target executrable
+TARGET=compiledes
+
+# optional: adapt filenames to environment
+ifneq ($(findstring Darwin,$(shell uname -s)),)
+LIBFAUDES=./libFAUDES_osx
+TARGET=compiledes_osx
+endif
+ifneq ($(findstring Linux,$(shell uname -s)),)
+LIBFAUDES=./libFAUDES_lx
+TARGET=compiledes_lx
+endif
+ifneq ($(findstring MSYS,$(shell uname -s)),)
+LIBFAUDES=./libFAUDES_msys
+TARGET=compiledes_msys
+endif
 
 # compiler 
 CXX= g++
@@ -26,21 +43,7 @@ LIBS= $(LIBFAUDES)/libfaudes.a -lpthread
 # doxygen (only needed for the target doc, see below)
 DOXYGEN = doxygen
 
-# pragmatic adaption for Mac OSX
-ifneq ($(findstring Darwin,$(shell uname -s)),)
-LIBFAUDES=./libfaudes_osx
-endif
 
-# pragmatic adaption for Linux/LSB
-ifeq ($(FAUDES_PLATFORM),lsb_linux)
-CXX = /opt/lsb/bin/lsbc++ --lsb-target-version=4.1 --lsb-besteffort
-CC = /opt/lsb/bin/lsbcc   --lsb-target-version=4.1 --lsb-besteffort
-LXX = /opt/lsb/bin/lsbc++ --lsb-target-version=4.1 --lsb-besteffort
-CFLAGS += -fPIC -fstrict-aliasing -fmessage-length=0 -O3 -fno-stack-protector -std=gnu++98
-CFLAGS += -Wall
-LFLAGS += -Wl,--as-needed
-LIBFAUDES=./libfaudes_lsb
-endif
 
 
 # 
@@ -48,12 +51,12 @@ endif
 #
 
 # source files
-CPPSRC= cgp_eventconfig.cpp cgp_codegenerator.cpp cgp_codeprimitives.cpp \
-        cgp_embeddedc.cpp  cgp_atmega.cpp cgp_kinetis.cpp \
-        cgp_iec61131st.cpp cgp_gebtools.cpp cgp_plcoxml.cpp
-
-# executable source file
-EXESRC=compiledes.cpp
+CPPSRC=\
+  cgp_eventconfig.cpp cgp_codegenerator.cpp cgp_codeprimitives.cpp \
+  cgp_embeddedc.cpp  cgp_atmega.cpp cgp_kinetis.cpp \
+  cgp_iec61131st.cpp cgp_gebtools.cpp cgp_plcoxml.cpp
+CPPMAIN=\
+  compiledes.cpp
 
 # std dirs
 SRCDIR=src
@@ -63,8 +66,8 @@ BINDIR=build
 
 # adjust files to std dirs
 HEADERS = $(CPPSRC:%.cpp=$(SRCDIR)/%.h) 
-OBJECTS = $(CPPSRC:%.cpp=$(OBJDIR)/%.o) 
-EXECUTABLES := $(EXESRC:%.cpp=$(BINDIR)/%)
+OBJECTS = $(CPPSRC:%.cpp=$(OBJDIR)/%.o) $(CPPMAIN:%.cpp=$(OBJDIR)/%.o)
+EXECUTABLES := $(BINDIR)/$(TARGET)
 
 # first target becomes the default
 default: $(EXECUTABLES) $(EXESRC:%.cpp=$(OBJDIR)/%.o) $(OBJECTS)
@@ -87,8 +90,8 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS) $(PREPARE)
 	$(CXX) $(CFLAGS) $(DEFINES) $< -o $@
 
 # .o -> bin
-$(BINDIR)/%: $(OBJDIR)/%.o $(OBJECTS) $(PREPARE)
-	$(LXX) $(LFLAGS) $(DEFINES) $< $(OBJECTS) $(LIBS) -o $@
+$(BINDIR)/%: $(OBJECTS) $(PREPARE)
+	$(LXX) $(LFLAGS) $(DEFINES) $(OBJECTS) $(LIBS) -o $@
 
 # clean
 clean:

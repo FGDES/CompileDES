@@ -10,7 +10,7 @@ also the Makefile.
 /* FAU Discrete Event Systems Library (libfaudes)
 
    Copyright (C) 2006  Bernd Opitz
-   Copyright (C) 2008-2017  Thomas Moor
+   Copyright (C) 2008-2021  Thomas Moor
    Exclusive copyright is granted to Klaus Schmidt
 
    This library is free software; you can redistribute it and/or
@@ -73,12 +73,13 @@ typedef double Float;
 
 /** Debug: console output, no redirection */
 #define FAUDES_WRITE_DIRECT(message) \
-  { if(!faudes::ConsoleOut::G()->Mute()) { std::cout << message << std::endl;} }
+  { if(faudes::ConsoleOut::G()->Verb()>0) { std::cout << message << std::endl;} }
 
 /** Debug: output macro for optional redirection of all console output */
 #define FAUDES_WRITE_CONSOLE(message) \
-  { if(!faudes::ConsoleOut::G()->Mute()) {				\
-      std::ostringstream cfl_line; cfl_line << message << std::endl; faudes::ConsoleOut::G()->Write(cfl_line.str());} }
+  { if(faudes::ConsoleOut::G()->Verb()>0) {			     \
+      std::ostringstream cfl_line; cfl_line << message << std::endl; \
+      faudes::ConsoleOut::G()->Write(cfl_line.str()); } }
 
 /** Debug: always report warnings */
 #define FD_WARN(message) FAUDES_WRITE_CONSOLE("FAUDES_WARNING:   " << message)
@@ -108,6 +109,7 @@ typedef double Float;
 #endif
 
 /** Alternative progessreport for development */
+#ifdef FAUDES_SYSTIME  
 #define FD_WPD(cntnow, cntdone, message)  { \
   static faudes_systime_t start; \
   static faudes_systime_t now; \
@@ -129,6 +131,9 @@ typedef double Float;
     prog=cntnow; \
   } \
   init=true; } 
+#else
+#define FD_WPD(cntnow, contdone, message) FD_WPC(cntnow, contdone, message) 
+#endif
 
 
 /** Debug: optional report on user functions */

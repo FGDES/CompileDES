@@ -222,7 +222,7 @@ void ProjectNonDet_ref(Generator& rGen, const EventSet& rProjectAlphabet) {
 
 
 /**
- * Graph data structure for transitionrelation -- EXPERIMENTAL
+ * Graph data structure for transition relation -- EXPERIMENTAL
  *
  * We have encountered situations where the set based approach implies a 
  * performace penalty for large generators. This light-weight graph class 
@@ -235,16 +235,11 @@ void ProjectNonDet_ref(Generator& rGen, const EventSet& rProjectAlphabet) {
  * templates
  *
  */
-template< class VLabel, class ELabel >
-struct TGraph;
-template< class VLabel, class ELabel >
-struct TNode;
-template< class VLabel, class ELabel >
-struct graph_iterator_t;
-template< class VLabel, class ELabel >
-struct node_iterator_t;
-template< class VLabel, class ELabel >
-struct node_entry_t;
+template< class VLabel, class ELabel > struct TGraph;
+template< class VLabel, class ELabel > struct TNode;
+template< class VLabel, class ELabel > struct graph_iterator_t;
+template< class VLabel, class ELabel > struct node_iterator_t;
+template< class VLabel, class ELabel > struct node_entry_t;
 
 
 /**
@@ -256,7 +251,7 @@ struct node_entry_t;
  * graph: 
  *    map< state-index , node >
  * node:
- *    set< node-entrz >
+ *    set< node-entry >
  * node-entry:
  *    pair < event-index , graph-iterator > >
  *
@@ -269,14 +264,16 @@ struct TGraph : std::map< VLabel , TNode< VLabel , ELabel > > {
   typedef graph_iterator_t< VLabel , ELabel> Iterator;
   // global min, element
   static inline Iterator InfX1(void) { 
-    static TGraph gInfX1; return gInfX1.begin(); }
+    static TGraph gInfX1;
+    return gInfX1.begin();
+  }
 };
 
 
 /**
  * A node represents the edges related to one individual vertex.
- * For our use, the edges are transitions from the state associated
- * with the respective vertex.
+ * For our use, a node is a state and the edges are transitions to
+ # successor states.
  */
 template< class VLabel, class ELabel >
 struct TNode : std::set< node_entry_t< VLabel , ELabel > > {
@@ -295,7 +292,7 @@ struct TNode : std::set< node_entry_t< VLabel , ELabel > > {
 
 /**
  * A node-entry represents one edge. For our use, this corresponds
- * to a transition and the edge-label is the event index.
+ * to one transition and the edge-label is the event index.
  */
 template< class VLabel, class ELabel >
 struct node_entry_t {
@@ -321,14 +318,14 @@ struct node_entry_t {
 
 
 /**
- * An iterators over the map of all nodes is interpreted
+ * An iterator over the map of all nodes is interpreted
  * as a state incl. all related transition. This impelmentation
  * provides convenience methods to access the state index and to iterate 
  * over exiting transitions.
  */
 template< class VLabel, class ELabel >
 struct graph_iterator_t : TGraph< VLabel , ELabel >::iterator {
-  // conveniend const cast
+  // convenience const cast
   inline graph_iterator_t< VLabel , ELabel >* FakeConst(void) const 
     { return (const_cast<graph_iterator_t< VLabel , ELabel >* >(this)); }
   // constructors
@@ -362,7 +359,8 @@ struct graph_iterator_t : TGraph< VLabel , ELabel >::iterator {
     ++((*this)->second.RefCnt);
   }  
   // user data
-  inline Int& UsrFlg(void) { return (*this)->second.UsrFlg; }
+  inline Int  UsrFlg(void) const { return (*this)->second.UsrFlg; }
+  inline void UsrFlg(Int f) { (*this)->second.UsrFlg=f; }
   // inspect for debugging
   std::string Str(void) const {
     std::stringstream rep;
@@ -678,7 +676,7 @@ void ProjectNonDet_simple(Generator& rGen, const EventSet& rProjectAlphabet) {
 // Project, version 2009/05, Tobias Barthel -- used for libFAUDES 2.14 to 2.23 (2009 -- 2014)
 // Tobias Barthel found a test case (non-deterministic? diagnoser?) in which the original implementation 
 // by Bernd Opitz was believed to fail. Unfortunatly, this test case is now lost. As of 2014/03, we use 
-// the above re-coded version of the original algorithm as our reference. We believe it to be  correct 
+// the above re-coded version of the original algorithm as our reference. We believe it to be correct 
 // ... it passed all our test cases with identical results to the below implementation.
 void ProjectNonDet_barthel(Generator& rGen, const EventSet& rProjectAlphabet) {
 
@@ -1515,8 +1513,8 @@ void aInvProject(Generator& rGen, const EventSet& rProjectAlphabet) {
   // perform
   InvProject(rGen,rProjectAlphabet);
   // copy all attributes from input alphabets
-  FD_DF("aInvProject(..): fixing attributes: source " << typeid(*rProjectAlphabet.AttributeType()).name() <<
-	  " dest " << typeid(*rGen.Alphabet().AttributeType()).name());
+  FD_DF("aInvProject(..): fixing attributes: source " << typeid(rProjectAlphabet.AttributeType()).name() <<
+	  " dest " << typeid(rGen.Alphabet().AttributeType()).name());
   for(EventSet::Iterator eit=newevents.Begin(); eit!=newevents.End(); ++eit)  
     rGen.EventAttribute(*eit,rProjectAlphabet.Attribute(*eit));
 }

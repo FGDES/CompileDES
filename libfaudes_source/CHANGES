@@ -12,6 +12,100 @@ libFAUDES version.
 
 ##########
 
+Relative to 2.32*
+
+***
+
+The function Automaton used to preprocess the argument via  Trim. This
+has been removed, you may want to call Trim explcitly before Automaton
+to obtain pte 2.33 compatible behaviour. The rationla is to be agnostic
+w.r.t. altyernative acceptance conditions.
+
+***
+
+Upgraded to Lua 5.4.8; There was no pressing need, but 5.1.3. just felt
+so outdated. We'll see how we are going. Edit luabindings/makefile.plugin
+to select good old Lua 5.1.3. However, 5.1.3 support  will fade out eventually.
+
+***
+
+Refactored to drop the suffix "NB" for synthesis methods. E.g.
+"SupConNB" synthesises the supremal controllable sublanguage and
+is now called "SupCon". This was announced to happen 2.22*. Likewise,
+we dropped the prefix "Prefix" in "PrefixClosed". E.g.
+"IsRelativelyPrefixClosed" becomes "IsRelativelyClosed".
+
+
+***
+
+Refactored to collect all Buechi-related utilities in a separate plug-in.
+This includes renaming for some functions from "AbcOmegaXyz" to "AbcBuechiXyz".
+The plug-in will be the basis to address Rabin automata in due course.
+
+***
+
+Refactored "XElementType" of TypeDefinition to "ElementType"
+
+***
+
+Updated the doxygen configuration and stylesheets. We are now testing/
+developing with doxygen v.1.11.0 which is common in 2025. Ignoring various
+doxygen warnings, our now configuartion is fine back to v1.9.1. 
+
+##########
+
+Relative to 2.31*
+
+***
+
+Tuning the build system for the migration to GitHub. This should
+not affect libFAUDES applications. For the time being, we recommend
+to get the 2.31* from the FGDES/LRT/FAU download page and wait for
+2.32* until stable.
+
+***
+
+Transitioning to MSYS2 as build environment on MS Windows. Building with
+MS compilers "cl.exe" should still work fine, howeverm we not test on
+this on a regular basis anymore.
+
+***
+
+We are now internally using "/" as path default seperator on all
+platforms including MS Windows. Only when a "\" is sensed in the path 
+from the left, we also use "\" when appending to such a path. Why on
+earth does MS accept "/" on the sytem interface but implements "cmd.exe"
+to not to do so. "flxinstall" uses "std::system" and this  translates to
+an invocation of "cmd.exe" and there we do need "\" for all built in 
+commands in contrast to the well established "/". Lets figure how far 
+we get with our new semi-smart scheeme. 
+
+***
+
+Yet again the token IO. We have changed the methoeds "ReadInteger" and
+alike of "TokenReader" to not digest a mismatching token (while still
+throwing an exception). This should have been the design in the first
+place.
+
+##########
+
+Relative to 2.30b
+
+***
+
+Significant performance improvements for Product composition (used in
+LanguageIntersection, Languagedifference, and many more)
+
+***
+
+Bugfixes for IsLCC and  KleeneClosureNonDet
+
+***
+
+Re-design of compositional verification (incl. bugfixes)
+
+##########
+
 Relative to 2.27a
 
 ***
@@ -78,7 +172,7 @@ factor 20 for our test cases.
 ***
 
 Revision of bisimlation code, formerly part of the observer plug-in,
-no part of core library. Performance benefits depending on input data
+now part of core library. Performance benefits depending on input data
 is about factor 10 (for generators with about 100000 states)
 
 ***
@@ -123,7 +217,7 @@ libFAUDES external basic types:
 - Int   (=long int, used in integer for arithmetic) 
 - Float (=double, used as pseudo real for arithmetic)
 Other occurences of "int" and "long int" have been (should
-be) substituted by a more specific type from the C++ std, 
+have been) substituted by a more specific type from the C++ std, 
 e.g. std::size_t.
 
 We are planning to use 64-bit precompiled binaries for
@@ -132,7 +226,7 @@ on 32-bit binary distributions.
 
 ***
 
-Minor adjustment in signal based io devices for 2.23g, 
+Minor adjustment in signal based IO devices for 2.23g, 
 including a copy of the process image to improve performance 
 in Comedi based edge detection. This may have unintended 
 side effects for other signal based devices, please report 
@@ -508,7 +602,7 @@ Attributes must be "proper" Type derivative, where "proper"  now means
 
 ***
 
-Name(void) on  faudes objects returns a "const std:string&"
+Name(void) on faudes objects returns a "const std:string&"
 
 ***
 
@@ -522,7 +616,7 @@ Plugin "synthesis" provides std RW synthesis functions
 ***
 
 IsComplete moved to core faudes. Note: the method consideres
-all states, not only reachable states. The rational is: for trim
+all states, not only co/reachable states. The rational is: for trim
 generators, the test corresponds to completeness of the marked language.
 For reachable generators with "dont mind marking", the test corresponds
 to completeness of the generated language.
