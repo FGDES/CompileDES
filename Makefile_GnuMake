@@ -13,13 +13,10 @@ DEFINES+= -DCOMPILEDES_VERSION=\"$(COMPILEDES_VERSION)\"
 # libFAUDES path 
 FAUDES=./libFAUDES_lib
 
-# libFAUDES archive
-LIBFAUDES=$FAUDES/libfaudes.a
-
 # target executrable
 TARGET=compiledes
 
-# optional: adapt filenames to environment
+# optional: filenames adapt to environment
 ifneq ($(findstring Darwin,$(shell uname -s)),)
 FAUDES=./libFAUDES_osx
 TARGET=compiledes_osx
@@ -30,7 +27,6 @@ TARGET=compiledes_lx
 endif
 ifneq ($(findstring Msys,$(shell uname -a)),)
 FAUDES=./libFAUDES_msys
-LIBFAUDES=faudes.lib
 TARGET=compiledes_msys.exe
 endif
 
@@ -42,7 +38,12 @@ CFLAGS= $(INCLUDES) -Wall -c
 # linker
 LXX= g++
 LFLAGS= -L$(FAUDES) 
-LIBS= $(FAUDES)/$(LIBFAUDES) -lpthread
+LIBS= $(FAUDES)/libfaudes.a -lpthread
+
+# fix libs on msys
+ifneq ($(findstring Msys,$(shell uname -a)),)
+LIBS= $(FAUDES)/faudes.lib -lpthread -lwinmm -lws2_32
+endif
 
 # doxygen (only needed for the target doc, see below)
 DOXYGEN = doxygen
