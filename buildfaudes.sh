@@ -15,7 +15,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   FAUDES_LIB=libFAUDES_lx
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   FAUDES_LIB=libFAUDES_osx
-elif [[ "$OSTYPE" == "msys" ]]; then
+elif [[ "$OSTYPE" == "cygwin" ]]; then
   FAUDES_LIB=libFAUDES_msys
 fi    
 
