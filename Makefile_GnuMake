@@ -42,7 +42,7 @@ CFLAGS= $(INCLUDES) -Wall -c
 # linker
 LXX= g++
 LFLAGS= -L$(FAUDES) 
-LIBS= $(FAUDES)/libfaudes.a -lpthread
+LIBS= $(FAUDES)/$(LIBFAUDES) -lpthread
 
 # doxygen (only needed for the target doc, see below)
 DOXYGEN = doxygen
