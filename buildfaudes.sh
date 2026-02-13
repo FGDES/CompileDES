@@ -9,14 +9,17 @@
 # libFAUDES sources
 FAUDES_SRC=./libFAUDES_source
 
-# libFAUDES destination 
+# libFAUDES destination / name
 FAUDES_LIB=libFAUDES_lib
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   FAUDES_LIB=libFAUDES_lx
+  LIBFAUDES=libfaudes.a  
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   FAUDES_LIB=libFAUDES_osx
+  LIBFAUDES=libfaudes.a  
 elif [[ "$OSTYPE" == "cygwin" ]]; then
   FAUDES_LIB=libFAUDES_msys
+  LIBFAUDES=faudes.lib 
 fi    
 
 
@@ -66,8 +69,7 @@ make -C $FAUDES_LIB/build -j 20 libfaudes
 unset FAUDES_LINKING
 
 # harvest results
-mv ${FAUDES_LIB}/build/libfaudes.* ${FAUDES_LIB}
-mv ${FAUDES_LIB}/build/faudes.* ${FAUDES_LIB}
+mv ${FAUDES_LIB}/build/${LIBFAUDES} ${FAUDES_LIB}
 mv ${FAUDES_LIB}/build/include ${FAUDES_LIB}
 
 #safe disk space
@@ -77,7 +79,7 @@ rm -rf ${FAUDES_LIB}/build
 ############################################################################
 # done
 
-if [ ! -f ${FAUDES_LIB}/libfaudes.a ]; then
+if [ ! -f ${FAUDES_LIB}/${LIBFAUDES} ]; then
     echo ==================== 
     echo "ERROR: something went wrong when compiling libFAUDES: abort"
     return
