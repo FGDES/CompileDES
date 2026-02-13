@@ -1,6 +1,0 @@
-** tmoor, 200709
-
-+ redesign to have Invariants attached to states rather than transitions
-+ added support of timeintervalls (from rberndt thesis)
-+ lots of bugs fixed
-+ integrate with new version 2.xx of libfaudes 

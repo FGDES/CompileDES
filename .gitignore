@@ -24,7 +24,7 @@ examples/libwpc/libkbus*
 examples/libwpc/wago_ipc_kbus*
 faudes_*
 
-# ignore libFAUDES  
+# ignore libFAUDES binaries
 libFAUDES_lx/*
 libFAUDES_osx/*
 libFAUDES_msys/*

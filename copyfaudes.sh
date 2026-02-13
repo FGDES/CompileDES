@@ -83,6 +83,7 @@ rm -rf $FAUDES_DST/stdflx
 rm -rf $FAUDES_DST/tutorial
 rm -rf $FAUDES_DST/.gitignore
 rm -rf $FAUDES_DST/.github
+rm -rf $FAUDES_DST/.git
 
 
 
