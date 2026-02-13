@@ -63,6 +63,17 @@ using namespace faudes;
    <IecDeclarePhysical val="VAR_EXTERNAL"/>
    @endverbatim
  *
+ * <strong>IecDeclareSymbolic</strong>. This option specifies the declaration keyword
+ * for the import of symbolic i/o addresses. The default is <tt>VAR_EXTERNAL</tt>, however,
+ * some compilers insist in a plain <tt>VAR</tt>. To disable explicit declaration of symbolic i/o alltogether,
+ * set this option to the empty string.
+ *
+ * @verbatim
+   <IecSymbolicPhysical val="VAR_EXTERNAL"/>
+   @endverbatim
+ *
+
+ 
  * <strong>IecTimeOperators</strong>. The default is to use explicit functions for artithmetic with
  * time date, i.e., <tt>SUB_TIME</tt> and <tt>ADD_TIME</tt>. This is IEC compliant. However, some target platforms do not provide
  * these functions but insist in appropriatly overloaded binary operators <tt>+</tt> and <tt>-</tt>. Corresponding
@@ -153,6 +164,9 @@ protected:
 
   /*! option: formal declaration of io lines */
   std::string mIecDeclarePhysical;
+
+  /*! option: formal declaration of io variables */
+  std::string mIecDeclareSymbolic;
 
   /*! option: overloaded operators for time maths */
   bool mHasIecTimeOperators;

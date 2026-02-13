@@ -51,28 +51,26 @@ fi
 # libFAUDES linking "static" or "static debug"
 export FAUDES_LINKING="static"
 
+# copy all sources
+rm -rf ${FAUDES_LIB}
+mkdir ${FAUDES_LIB}
+cp -R ${FAUDES_SRC} ${FAUDES_LIB}/build
 
 # do clean/compile
 echo ==================== clean libFAUDES
-make -C $FAUDES_SRC clean
+make -C $FAUDES_LIB/build clean
 echo ==================== build libFAUDES static archieve
-make -C $FAUDES_SRC -j 20 libfaudes
+make -C $FAUDES_LIB/build -j 20 libfaudes
 
 # cleanup environment
 unset FAUDES_LINKING
 
 # harvest results
-rm -rf ${FAUDES_LIB}
-mkdir ${FAUDES_LIB}
-mv ${FAUDES_SRC}/libfaudes.* ${FAUDES_LIB}
-cp -R ${FAUDES_SRC}/include ${FAUDES_LIB}/
+mv ${FAUDES_LIB}/build/libfaudes.* ${FAUDES_LIB}
+mv ${FAUDES_LIB}/build/include ${FAUDES_LIB}
 
-
-# safe some disk space
-echo ==================== clean source tree
-make -C $FAUDES_SRC clean
-rm -rf $FAUDES_SRC/plugins/iodevice/wago/bin/*
-rm -rf $FAUDES_LIB/bin/*
+#safe disk space
+rm -rf ${FAUDES_LIB}/build
 
 
 ############################################################################

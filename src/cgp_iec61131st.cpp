@@ -52,6 +52,7 @@ void Iec61131stCodeGenerator::Clear(void) {
   mIntegerType="INT";
   mIntegerSize=16;
   mIecDeclarePhysical="VAR_EXTERNAL";
+  mIecDeclareSymbolic="VAR_EXTERNAL";
   mLiteralCyclic="";
 }
 
@@ -60,12 +61,18 @@ void Iec61131stCodeGenerator::DoReadTargetConfiguration(TokenReader& rTr) {
   FD_DCG("Iec61131stCodeGenerator::DoReadTargetConfiguration()");
   // base
   CodePrimitives::DoReadTargetConfiguration(rTr);
-  // iec option
   Token token;
+  // iec option
   if(rTr.ExistsBegin("IecDeclarePhysical")) {
     rTr.ReadBegin("IecDeclarePhysical",token);
     mIecDeclarePhysical= token.AttributeStringValue("val");
     rTr.ReadEnd("IecDeclarePhysical");
+  }
+  // iec option
+  if(rTr.ExistsBegin("IecDeclareSymbolic")) {
+    rTr.ReadBegin("IecDeclareSymbolic",token);
+    mIecDeclareSymbolic= token.AttributeStringValue("val");
+    rTr.ReadEnd("IecDeclareSymbolic");
   }
   // iec option
   if(rTr.ExistsBegin("IncludeCyclic"))
@@ -82,10 +89,14 @@ void Iec61131stCodeGenerator::DoWriteTargetConfiguration(TokenWriter& rTw) const
   FD_DCG("Iec61131stCodeGenerator::DoWriteTargetConfiguration()");
   // base
   CodePrimitives::DoWriteTargetConfiguration(rTw);
-  // code option
   Token token;
+  // code option
   token.SetEmpty("IecDeclarePhysical");
   token.InsAttributeString("val",mIecDeclarePhysical);
+  rTw.Write(token);
+  // code option
+  token.SetEmpty("IecDeclareSymbolic");
+  token.InsAttributeString("val",mIecDeclareSymbolic);
   rTw.Write(token);
   // code option
   if(mLiteralCyclic.size()>0)
@@ -188,7 +199,7 @@ void Iec61131stCodeGenerator::DoGenerateFunction(void){
   Output() << "END_VAR";
   LineFeed(2);
   if(CountImportSymbolicIo()>0) {
-    Output() << "VAR_EXTERNAL";
+    Output() << mIecDeclareSymbolic;
     LineFeed(2);
     DeclareImportSymbolicIo();
     Output() << "END_VAR";
@@ -359,6 +370,8 @@ void Iec61131stCodeGenerator::DeclareImportPhysicalIo(void){
 
 // code blocks: import interface variables
 int Iec61131stCodeGenerator::CountImportSymbolicIo(void){
+  // bail out on unconfigured
+  if(mIecDeclareSymbolic=="") return 0;
   // figure count
   int iocnt=0;
   LineIterator lit=LinesBegin();
@@ -378,7 +391,7 @@ int Iec61131stCodeGenerator::CountImportSymbolicIo(void){
 }
 
 void Iec61131stCodeGenerator::DeclareImportSymbolicIo(void){
-  Comment("import i/o variables and addresses");
+  Comment("import i/o variables");
   LineIterator lit=LinesBegin();
   for(;lit!=LinesEnd();++lit) {
     std::string lineaddr= lit->second.mAddress;
