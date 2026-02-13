@@ -30,8 +30,8 @@ TARGET=compiledes_lx
 endif
 ifneq ($(findstring Msys,$(shell uname -a)),)
 FAUDES=./libFAUDES_msys
-LIBFAUDES=$FAUDES/faudes.lib
-TARGET=compiledes_msys
+LIBFAUDES=faudes.lib
+TARGET=compiledes_msys.exe
 endif
 
 # compiler 
