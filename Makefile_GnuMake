@@ -10,35 +10,39 @@
 COMPILEDES_VERSION = 3.14
 DEFINES+= -DCOMPILEDES_VERSION=\"$(COMPILEDES_VERSION)\"
 
-# libFAUDES compiled library and headers 
-LIBFAUDES=./libFAUDES_lib
+# libFAUDES path 
+FAUDES=./libFAUDES_lib
+
+# libFAUDES archive
+LIBFAUDES=$FAUDES/libfaudes.a
 
 # target executrable
 TARGET=compiledes
 
 # optional: adapt filenames to environment
 ifneq ($(findstring Darwin,$(shell uname -s)),)
-LIBFAUDES=./libFAUDES_osx
+FAUDES=./libFAUDES_osx
 TARGET=compiledes_osx
 endif
 ifneq ($(findstring Linux,$(shell uname -s)),)
-LIBFAUDES=./libFAUDES_lx
+FAUDES=./libFAUDES_lx
 TARGET=compiledes_lx
 endif
 ifneq ($(findstring Msys,$(shell uname -a)),)
-LIBFAUDES=./libFAUDES_msys
+FAUDES=./libFAUDES_msys
+LIBFAUDES=$FAUDES/faudes.lib
 TARGET=compiledes_msys
 endif
 
 # compiler 
 CXX= g++
-INCLUDES=-I$(LIBFAUDES)/include
+INCLUDES=-I$(FAUDES)/include
 CFLAGS= $(INCLUDES) -Wall -c
 
 # linker
 LXX= g++
-LFLAGS= -L$(LIBFAUDES) 
-LIBS= $(LIBFAUDES)/libfaudes.a -lpthread
+LFLAGS= -L$(FAUDES) 
+LIBS= $(FAUDES)/libfaudes.a -lpthread
 
 # doxygen (only needed for the target doc, see below)
 DOXYGEN = doxygen
