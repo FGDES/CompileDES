@@ -11,6 +11,8 @@
 *.dll
 *.lib
 *.pro.user*
+.qmake*
+.qtc*
 
 # ignore build dirs
 build

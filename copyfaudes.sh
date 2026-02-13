@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ############################################################################
-# convenience script to copy, configure and compile libFAUDES from source
+# convenience script to copy and configure libFAUDES for CompileDES
 
 # this script must be invoked with ./DompileDES as the current directory
 # and with the source and destination specification relative to that
@@ -13,15 +13,6 @@ FAUDES_SRC=../libFAUDES
 
 # libFAUDES destination (do not shange)
 FAUDES_DST=libFAUDES_source
-FAUDES_LIB=libFAUDES_lib
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  FAUDES_LIB=libFAUDES_lx
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-  FAUDES_LIB=libFAUDES_osx
-elif [[ "$OSTYPE" == "msys" ]]; then
-  FAUDES_LIB=libFAUDES_msys
-fi    
-
 
 
 ############################################################################
@@ -58,10 +49,9 @@ fi
 export FAUDES_PLUGINS="timed iodevice simulator"
 export FAUDES_DEBUG="core_checked core_exceptions iop_threads iop_performance sim_sync core_progress"
 export FAUDES_OPTIONS="core_systime core_network core_threads"
-export FAUDES_LINKING="static"
 
 
-# do copy/clean/configure/compile
+# do copy/clean/configure
 echo ==================== copy source tree
 rm -rf $FAUDES_DST
 cp -R $FAUDES_SRC $FAUDES_DST 
@@ -69,14 +59,11 @@ echo ==================== clean libFAUDES
 make -C $FAUDES_DST dist-clean
 echo ==================== configure libFAUDES
 make -C $FAUDES_DST configure 
-echo ==================== build libFAUDES static archieve
-make -C $FAUDES_DST -j 20 libfaudes
 
 # cleanup environment
 unset FAUDES_PLUGINS
 unset FAUDES_DEBUG
 unset FAUDES_OPTIONS
-unset FAUDES_LINKING
 unset FAUDES_PLATFROM
 
 # safe some disk space
@@ -94,24 +81,10 @@ rm -rf $FAUDES_DST/plugins/*/src/doxygen/*
 rm -rf $FAUDES_DST/bin/*
 rm -rf $FAUDES_DST/stdflx
 rm -rf $FAUDES_DST/tutorial
+rm -rf $FAUDES_DST/.gitignore
+rm -rf $FAUDES_DST/.github
 
-
-############################################################################
-# seperate lib and source
-
-rm -rf ${FAUDES_LIB}
-mkdir ${FAUDES_LIB}
-mv ${FAUDES_DST}/libfaudes.* ${FAUDES_LIB}
-cp -R ${FAUDES_DST}/include ${FAUDES_LIB}/
-
-if [ ! -f ${FAUDES_LIB}/libfaudes.a ]; then
-    echo ==================== 
-    echo "ERROR: something went wrong when compiling libFAUDES: abort"
-    return
-fi
 
 
 echo ==================== 
-echo "set up to build CompileDES" 
-echo "done ... source in " $(pwd)/$FAUDES_DST
-echo "done ... libary in " $(pwd)/$FAUDES_DST
+echo "set up to build libFAUDES" 
