@@ -8,7 +8,7 @@ visit ./include/configuration.h
 
 /* faudes core configuration */
 #define  FAUDES_VERSION "libFAUDES 2.33l"
-#define  FAUDES_CONFIG_TIMESTAMP "2026-02-13T16-31-49"
+#define  FAUDES_CONFIG_TIMESTAMP "2026-02-14T14-33-00"
 #define  FAUDES_PLUGINS "timed-iodevice-simulator"
 #define  FAUDES_PLUGINS_RTILOAD {}
 #define  FAUDES_SYSTIME
