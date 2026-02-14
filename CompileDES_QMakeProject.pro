@@ -89,6 +89,6 @@ win32:LIBS += wsock32.lib winmm.lib
 unix: !macx: LIBS += -lpthread
 
 # extra configuration for Mac Os X
-macx: QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.9
+macx: QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.11
 
 
