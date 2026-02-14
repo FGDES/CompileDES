@@ -11,7 +11,8 @@ if not exist %FAUDES_SRC%\include\cfl_baseset.h (
 )
 
 echo "=== prepare detination"
-del /Q %FAUDES_LIB%
+del /S /Q %FAUDES_LIB%
+rmdir /S /Q %FAUDES_LIB%
 mkdir %FAUDES_LIB%
 xcopy /E /I /Y /Q %FAUDES_SRC% %FAUDES_LIB%\build
 
@@ -34,5 +35,6 @@ if not exist %FAUDES_LIB%\build\faudes.lib (
 
 echo "=== harvest result and clean up"
 copy %FAUDES_LIB%\build\faudes.lib %FAUDES_LIB%
-xcopy /E /I /Y /Q %FAUDES_LIB%\build\include %FAUDES_LIB%
-del /Q %FAUDES_LIB%\build
+xcopy /E /I /Y /Q %FAUDES_LIB%\build\include %FAUDES_LIB%\include
+del /S /Q %FAUDES_LIB%\build
+rmdir /S /Q %FAUDES_LIB%\build

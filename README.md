@@ -25,6 +25,6 @@ Copyright of the current implementation is with Thomas Moor. CompileDES is distr
 If you want to utilise CompileDES under alternative licensing terms this can arranged on request.
 
 
-Copyright (c) 2010, 2016-2019, 2024 Thomas Moor.
+Copyright (c) 2010, 2016-2019, 2024-2026 Thomas Moor.
 
 
