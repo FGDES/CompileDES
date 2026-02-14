@@ -12,7 +12,7 @@ DEFINES += "COMPILEDES_VERSION=\\\"3.14\\\""
 # location of libFAUDES
 unix: LIBFAUDES = ./libFAUDES_lx
 macx: LIBFAUDES = ./libFAUDES_osx
-win32: LIBFAUDES = ./libFAUDES_msys
+win32: LIBFAUDES = ./libFAUDES_win
 
 # C++ dources and headers
 SOURCES += src/cgp_eventconfig.cpp
@@ -63,7 +63,7 @@ OBJECTS_DIR = build/obj
 # destination for binary
 linux: TARGET = build/compiledes_lx
 macx:  TARGET = build/compiledes_osx
-
+macx:  TARGET = build/compiledes_ein
 
 # name of static libFAUDES archive
 unix:LIBFAUDES_LIB = $$LIBFAUDES/libfaudes.a
