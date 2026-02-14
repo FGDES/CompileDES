@@ -352,13 +352,13 @@ Relevant files are
 ./libFAUDES_lx/*                     ... pre-compiled for Linux
 ./libFAUDES_osx/*                    ... pre-compiled for macOs
 ./libFAUDES_win/*                    ... pre-ompiled for Windows
-./libFAUDES_msys/*                   ... pre-ompiled for Windows/MSYS2
 
 ./bin/*                              pre-compiled binaries for Linux/OsX/Windows
 
 ./Makefile_GnuMake                   plain Makefile to build with the GNU-toolchain
 ./CompileDES_QMakeProjekt.pro        project file to build with Qt IDE Creator
-./CompileDES_Msvc2015Project.vcxproj project file to build with MS Visual C 2015 IDE
+./CompileDES_Msvc2015Project.*       project file to build with MS Visual C 2015 IDE
+./CompileDES_Msvc2022Project.*       project file to build with MS Visual C 2012 IDE
 @endverbatim
 
 
@@ -430,7 +430,7 @@ system toolchain
 ~/CompileDES> make -C libFAUDES_source FAUDES_LINKING="static"
 @endverbatim
 
-or, on MS Windows with MS Visual C and MinGW mingw32-make
+or, on MS Windows with MS compiler/linker and MinGW mingw32-make
 
 @verbatim
 C:\CompileDES> set PATH=%PATH%;C:\MinGW\bin

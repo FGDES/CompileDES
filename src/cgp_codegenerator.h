@@ -27,7 +27,7 @@ using namespace faudes;
 
 // set version string (overwrite by build system)
 #ifndef COMPILEDES_VERSION
-#define COMPILEDES_VERSION "3.0x"
+#define COMPILEDES_VERSION "3.xx"
 #endif
 
 

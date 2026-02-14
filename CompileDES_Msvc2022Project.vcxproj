@@ -114,6 +114,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>.\libFAUDES_win\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>COMPILEDES_VERSION="3.14";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>.\libFAUDES_win;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -132,6 +133,7 @@
       <MinimalRebuild />
       <BufferSecurityCheck />
       <FloatingPointModel />
+      <PreprocessorDefinitions>COMPILEDES_VERSION="3.14";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>.\libFAUDES_win;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
