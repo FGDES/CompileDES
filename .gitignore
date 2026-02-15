@@ -28,6 +28,7 @@ faudes_*
 libFAUDES_lx/*
 libFAUDES_osx/*
 libFAUDES_msys/*
+libFAUDES_win/*
 
 # ignore example archieve
 examples/blink/*.c_*
