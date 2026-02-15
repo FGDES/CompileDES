@@ -19,6 +19,12 @@ div#cdes {
   /* background: #F9F1FC; */
 }
 
+#titlearea
+{
+	border-bottom: 1px solid var(--title-separator-color);
+	background-color: var(--title-background-color);
+}
+
 /* fgdes link: refs visible */
 #titlearea table {
   width: 100%;
@@ -26,17 +32,17 @@ div#cdes {
 
 /* fgdes link: erefs visible */
 #titlearea a:visited {
-  color: #FBFCFD;
+ /* color: #FBFCFD; */
 }
 
 /* fgdes link: expand title */
 #titlearea a {
-  color: #FBFCFD;
+  /* color: #FBFCFD; */
 }
 
 /* fgdes link, line 1 */
 #fgdeslink {
-    font: 300% Tahoma, Arial,sans-serif;
+    font: 200% Tahoma, Arial,sans-serif;
     margin: 0px;
     text-align: right;
     padding: 2px 0px;
@@ -44,37 +50,9 @@ div#cdes {
 
 /* fgdes link, line 2 */
 #fgdesbrief {
-    font: 120% Tahoma, Arial,sans-serif;
+    font: 90% Tahoma, Arial,sans-serif;
     margin: 0px;
     padding: 2px 0px;
     text-align: right;
 }
 
-/* adapt doxygen layout */
-#side-nav {
-  left: auto;
-  /* background: #F9F1FC; */
-}
-#nav-tree {
-  /* background: #F9F1FC; */
-}
-#top {
-  /* position: absolute; */
-  /* width: 100%; */
-  /* left: 0px; */
-  /* background: #F9F1FC; */
-  background-image: url("tab_a.png");
-  background-size: auto 100%;
-  background-repeat: repeat-x;
-  color: #FBFCFD;
-  text-shadow: 0px 1px 1px #00;
-}
-pre.fragment {
-  font-size: 100%;
-}
-#nav-sync {
-  visibility: hidden;
-}
-#doc-content div.summary {
-  margin-left: -500px;
-}

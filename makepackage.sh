@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # manually configure versionised package name
-PACKAGE=faudes_compiledes_3_13
+PACKAGE=faudes_compiledes_3_14
 
 ############################################################################
 # convenience script to create an archieve of the code-generator project
@@ -34,14 +34,13 @@ fi
 
 # safe some disk space
 make -f Makefile_GnuMake clean
-rm build/compiledes
-make -C libfaudes_source clean
+make -C libFAUDES_source clean
 make -C examples/blink -f Makefile_Atm clean
 make -C examples/blink -f Makefile_K20 clean
 make -C examples/elevator clean
-rm -rf libfaudes_source/bin/*
-rm -rf libfaudes_source/tools
-rm -rf libfaudes_source/stdflx
+rm -rf libFAUDES_source/bin/*
+rm -rf libFAUDES_source/tools
+rm -rf libFAUDES_source/stdflx
 
 # set destination
 DEST=$(pwd)/${PACKAGE}
@@ -49,15 +48,17 @@ DEST=$(pwd)/${PACKAGE}
 echo ==================== prepare destination ${PACKAGE}
 rm -rf $DEST
 mkdir $DEST
-cp -R libfaudes_* $DEST/
+cp -R libFAUDES_* $DEST/
 cp -R src $DEST/
 cp -R bin $DEST/
+cp -R doc $DEST/
 cp -R examples $DEST/
 cp -R build $DEST/
 cp  Makefile* $DEST/
 cp  CompileDES_*  $DEST/
 cp  *.sh $DEST/
-cp  LICENSE.txt README.txt $DEST/
+cp  *.bat $DEST/
+cp  LICENSE README.md $DEST/
 cp  TAR_EXCLUDES  $DEST/
 
 

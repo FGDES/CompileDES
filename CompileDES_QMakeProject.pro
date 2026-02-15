@@ -63,7 +63,7 @@ OBJECTS_DIR = build/obj
 # destination for binary
 linux: TARGET = build/compiledes_lx
 macx:  TARGET = build/compiledes_osx
-macx:  TARGET = build/compiledes_ein
+win:   TARGET = build/compiledes_win
 
 # name of static libFAUDES archive
 unix:LIBFAUDES_LIB = $$LIBFAUDES/libfaudes.a
