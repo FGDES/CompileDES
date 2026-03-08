@@ -8,6 +8,8 @@ PACKAGE=faudes_compiledes_3_14
 
 echo "==================== makepackage.sh"
 echo "create tgz archieve of compiledes"
+echo "note: you may build and collect binaries befeorehand"
+echo "note: you may want to set the version numer ${PACKAGE}"
 echo "current directory: " $(pwd)
 echo "package name: " $PACKAGE
 echo "press return to proceed or ctrl-c to bail out"

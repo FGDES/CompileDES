@@ -69,7 +69,7 @@ using namespace faudes;
  * set this option to the empty string.
  *
  * @verbatim
-   <IecSymbolicPhysical val="VAR_EXTERNAL"/>
+   <IecDeclareSymbolic val="VAR_EXTERNAL"/>
    @endverbatim
  *
 
